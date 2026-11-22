@@ -235,7 +235,8 @@ const OUR = [
   { key: "spark", team: "Star Athletics Spark", div: "L3 Youth Flex Small", eos: "youth" },
   { key: "glow", team: "Star Athletics Glow", div: "L2 Youth Small", eos: "youth" },
   { key: "black", team: "Star Athletics Youth Black", div: "L1 Youth Medium", eos: "youth" },
-  { key: "minielite", team: "Star Athletics Mini Elite Neon", div: "L1 Mini Small", eos: "neregional" }
+  { key: "minielite", team: "Star Athletics Mini Elite Neon", div: "L1 Mini Small", eos: "neregional" },
+  { key: "white", team: "Star Athletics White", div: "L3 Senior Small", eos: "summit", retired: true }
 ];
 const OUR_NAMES = new Set(OUR.map(o => o.team));
 let CURRENT = OUR[0];
@@ -249,7 +250,7 @@ const EARLY = "Earlier comp";
 const S25 = "2024–25", S26 = "2025–26", S27 = "2026–27";
 const DIVS = { L5SS: "L5 Senior Small", L4SM: "L4 Senior Medium", L4JS: "L4 Junior Small", L42SCM: "L4.2 Senior Coed Medium", L3JM: "L3 Junior Medium", L42SM: "L4.2 Senior Medium",
   L2JFS: "L2 Junior Flex Small", L2JS: "L2 Junior Small", L1JS: "L1 Junior Small", L3YFS: "L3 Youth Flex Small", L3YS: "L3 Youth Small",
-  L2YS: "L2 Youth Small", L2YM: "L2 Youth Medium", L1YM: "L1 Youth Medium", L1MS: "L1 Mini Small" };
+  L2YS: "L2 Youth Small", L2YM: "L2 Youth Medium", L1YM: "L1 Youth Medium", L1MS: "L1 Mini Small", L3SS: "L3 Senior Small" };
 
 /* ---- 2025–26 published finals results (Cheer Theory) ---- */
 // [division, team, date, competition, place, score]
@@ -657,9 +658,19 @@ const LABELED = [
   ["L2YS", "USA Wildcats Glory Girls", "2026-01-24", "Spirit Unlimited Battle at the Boardwalk", 4, 95.7167],
   ["L1YM", "Star Athletics Youth Black", "2026-01-24", "Spirit Unlimited Battle at the Boardwalk", 1, 95.6522],
   ["L1MS", "Star Athletics Mini Elite Neon", "2026-01-24", "Spirit Unlimited Battle at the Boardwalk", 1, 95.4348],
-  ["L1MS", "World Cup Supernovas", "2026-01-24", "Spirit Unlimited Battle at the Boardwalk", 2, 94.9674]
+  ["L1MS", "World Cup Supernovas", "2026-01-24", "Spirit Unlimited Battle at the Boardwalk", 2, 94.9674],
+  ["L3SS", "Star Athletics White", "2026-01-11", "Spirit Cheer Grand Nationals", null, 96.9792],
+  ["L3SS", "Star Athletics White", "2026-01-24", "Spirit Unlimited Battle at the Boardwalk", 1, 96.6667],
+  ["L3SS", "Jersey All Stars Scream Queens", "2026-01-24", "Spirit Unlimited Battle at the Boardwalk", 2, 95.4667],
+  ["L3SS", "Victory Vipers V3nom", "2026-01-24", "Spirit Unlimited Battle at the Boardwalk", 3, 94.7167],
+  ["L3SS", "Star Athletics White", "2026-02-15", "CHEERSPORT Nationals", null, 97.0333],
+  ["L3SS", "Star Athletics White", "2026-02-22", "Coastal at the Capitol", null, 94.9834],
+  ["L3SS", "Star Athletics White", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", null, 97.6],
+  ["L3SS", "Star Athletics White", "2026-03-22", "CANAM Grand Nationals", null, 95.3542]
 ];
 LABELED.forEach(([d, t, date, comp, place, score]) => add(t, comp, S26, date, score, place, null, DIVS[d]));
+// Senior White (2025–26 only): out in Summit semis, 15th
+add("Star Athletics White", "The Summit", S26, "2026-05-03", 95.65, null, "Semis", DIVS.L3SS);
 // Atomic Kitten: no published season found, so earlier scouting-sheet scores are used
 [92.233, 94.6667, 89.4458, 92.45].forEach(s => add("Showtime Elite Atlanta Atomic Kitten", EARLY, S26, "0000", s, null, null, DIVS.L5SS));
 
@@ -983,7 +994,7 @@ function otherDivNote(c, o, quietIfNone) {
   return quietIfNone ? "" : `<p class="hint" style="margin:6px 0 0">${short} didn't compete here last season.</p>`;
 }
 function renderSwitch() {
-  $("#ourSwitch").innerHTML = OUR.map(o => `<button type="button" data-our="${o.key}" aria-pressed="${o.key === CURRENT.key}">${esc(o.team.replace("Star Athletics ", ""))}<small>${esc(o.div)}${o.isNew ? " · new" : ""}</small></button>`).join("");
+  $("#ourSwitch").innerHTML = OUR.filter(o => !o.retired).map(o => `<button type="button" data-our="${o.key}" aria-pressed="${o.key === CURRENT.key}">${esc(o.team.replace("Star Athletics ", ""))}<small>${esc(o.div)}${o.isNew ? " · new" : ""}</small></button>`).join("");
 }
 function renderSeason() {
   const o = CURRENT;
@@ -1196,13 +1207,16 @@ function seasonFinish(team, se) {
     if (ne) return "NE Regional Summit: " + ordinal(ne.place);
     const s = ownResults(team).find(r => r.season === se && r.comp === SUMMIT && r.place);
     if (s) return "Summit: " + ordinal(s.place);
+    const sr = ownResults(team).find(r => r.season === se && r.comp === SUMMIT && r.round);
+    if (sr) return "Summit: out in " + sr.round + (team === "Star Athletics White" ? " (15th)" : "");
   }
   return null;
 }
 function renderSeasons() {
   const se = SEL_SEASON;
   $("#seasonSwitch").innerHTML = SEASONS.map(x => `<button type="button" data-season="${x}" aria-pressed="${x === se}">${x}<small>${x === S27 ? "this season" : x === S26 ? "last season" : "two seasons ago"}</small></button>`).join("");
-  const cards = OUR.map(o => {
+  const SHOWN = OUR.filter(o => !o.retired || ownResults(o.team).some(r => r.season === se));
+  const cards = SHOWN.map(o => {
     const rs = ownResults(o.team).filter(r => r.season === se).sort((a, b) => a.date.localeCompare(b.date));
     const s = stats(rs.map(r => r.score));
     const wins = rs.filter(r => r.place === 1 && r.round !== "Semis" && r.round !== "Wild Card").length;
@@ -1230,7 +1244,7 @@ function renderSeasons() {
   }).join("");
   $("#seasonOverview").innerHTML = (se === S27 ? `<p class="hint">The 2026–27 season is just starting. This view fills in automatically as scores post.</p>` : "") + cards;
   // standings
-  const withDiv = OUR.map(o => ({ o, div: teamSeasonDiv(o.team, se) || (se === S27 ? o.div : null) })).filter(x => x.div);
+  const withDiv = SHOWN.map(o => ({ o, div: teamSeasonDiv(o.team, se) || (se === S27 ? o.div : null) })).filter(x => x.div);
   if (!withDiv.some(x => x.o.key === SEL_STAND)) SEL_STAND = withDiv[0] ? withDiv[0].o.key : null;
   $("#standSwitch").innerHTML = withDiv.map(x => `<button type="button" data-stand="${x.o.key}" aria-pressed="${x.o.key === SEL_STAND}">${esc(x.o.team.replace("Star Athletics ", ""))}<small>${esc(x.div)}</small></button>`).join("") || '<p class="empty">No division data for this season.</p>';
   const pick = withDiv.find(x => x.o.key === SEL_STAND);
