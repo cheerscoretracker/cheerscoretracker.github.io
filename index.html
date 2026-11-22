@@ -46,6 +46,8 @@ header { background: var(--head-bg); color: #fff; padding: 18px 16px 0; }
 h1 { font-family: var(--font-display); font-weight: 800; font-size: 34px; letter-spacing: .5px; margin: 0; text-transform: uppercase; line-height: 1; }
 h1 span { color: var(--accent); }
 .sub { color: #c9c6e0; margin: 6px 0 14px; font-size: 15px; }
+.by { color: #fff; margin: 6px 0 0; font-size: 15px; font-weight: 600; letter-spacing: .3px; }
+footer.site { color: var(--muted); font-size: 13px; padding: 0 16px 32px; }
 nav { display: flex; gap: 4px; overflow-x: auto; }
 nav button { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: .5px; text-transform: uppercase;
   background: transparent; color: #c9c6e0; border: 0; padding: 10px 12px; cursor: pointer; border-bottom: 4px solid transparent; white-space: nowrap; }
@@ -134,6 +136,7 @@ tr.mine td { background: var(--accent-soft); }
 <header>
   <div class="wrap">
     <h1>Cheer Score <span>Tracker</span></h1>
+    <p class="by">by Heather Natoli</p>
     <p class="sub">Know who you're up against before the mat.</p>
     <nav role="tablist" aria-label="Sections">
       <button role="tab" id="tab-season" aria-controls="panel-season" aria-selected="true" data-view="season">Our Teams</button>
@@ -1261,5 +1264,6 @@ SEL_STAND = (saved || "phoenix"); renderSeasons();
 const startView = location.hash.slice(1);
 if (VIEWS.includes(startView) && startView !== "season") setView(startView);
 </script>
+<footer class="site wrap">© 2026 Heather Natoli · Cheer Score Tracker</footer>
 </body>
 </html>
