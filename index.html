@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cheer Score Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Layout: scoreboard header, tab bar, one working panel; mobile-first for parents in the stands */
+  --bg: #f4f3f8;
+  --surface: #ffffff;
+  --ink: #1b1a33;
+  --muted: #6b6984;
+  --line: #e2e0ec;
+  --accent: #d81b8c;
+  --accent-soft: #fbe3f1;
+  --gold: #f5d90a;
+  --gold-ink: #4a4200;
+  --good: #1a8a5a;
+  --warn: #b5641a;
+  --head-bg: #1b1a33;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12111f; --surface: #1c1b2e; --ink: #f1effa; --muted: #a29fbd; --line: #2e2c47;
+    --accent: #ff5cb8; --accent-soft: #3a1830; --gold: #f5d90a; --gold-ink: #2b2600;
+    --good: #4ccf93; --warn: #f0a25a; --head-bg: #0b0a16; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12111f; --surface: #1c1b2e; --ink: #f1effa; --muted: #a29fbd; --line: #2e2c47;
+  --accent: #ff5cb8; --accent-soft: #3a1830; --gold: #f5d90a; --gold-ink: #2b2600;
+  --good: #4ccf93; --warn: #f0a25a; --head-bg: #0b0a16; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45; }
+header { background: var(--head-bg); color: #fff; padding: 18px 16px 0; }
+.wrap { max-width: 980px; margin: 0 auto; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: 34px; letter-spacing: .5px; margin: 0; text-transform: uppercase; line-height: 1; }
+h1 span { color: var(--accent); }
+.sub { color: #c9c6e0; margin: 6px 0 14px; font-size: 15px; }
+nav { display: flex; gap: 4px; overflow-x: auto; }
+nav button { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: .5px; text-transform: uppercase;
+  background: transparent; color: #c9c6e0; border: 0; padding: 10px 12px; cursor: pointer; border-bottom: 4px solid transparent; white-space: nowrap; }
+nav button[aria-selected="true"] { color: #fff; border-bottom-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+main { padding: 18px 16px 40px; }
+.panel[hidden] { display: none; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 26px; text-transform: uppercase; margin: 0 0 4px; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-weight: 700; font-size: 20px; text-transform: uppercase; margin: 0 0 6px; text-wrap: balance; }
+.hint { color: var(--muted); margin: 0 0 14px; font-size: 15px; max-width: 65ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 14px; }
+label { display: grid; gap: 4px; font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+select, input[type="search"] { font: inherit; font-size: 16px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-width: 260px; max-width: 100%; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 700; }
+tr:last-child td { border-bottom: 0; }
+tr.sep td { background: var(--bg); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 700; padding: 6px 12px; }
+td.num, th.num { text-align: right; }
+.rank { font-family: var(--font-display); font-weight: 800; font-size: 24px; width: 44px; color: var(--muted); }
+tr.top1 .rank { color: var(--accent); }
+tr.mine td { background: var(--accent-soft); }
+.team-link { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.team-link:hover { text-decoration-color: var(--accent); }
+.bar { height: 8px; background: var(--accent-soft); border-radius: 4px; min-width: 90px; position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 4px; }
+.best { background: var(--gold); color: var(--gold-ink); padding: 1px 6px; border-radius: 4px; font-weight: 700; }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.pill.good { color: var(--good); border-color: currentColor; }
+.pill.warn { color: var(--warn); border-color: currentColor; }
+.pill.accent { color: var(--accent); border-color: currentColor; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 12px 0; }
+.stat { background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+.stat b { display: block; font-family: var(--font-display); font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat span { font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); font-weight: 700; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.scores { display: flex; flex-wrap: wrap; gap: 6px; font-variant-numeric: tabular-nums; }
+.scores span { background: var(--bg); padding: 4px 8px; border-radius: 6px; font-size: 15px; }
+.scores span.best { background: var(--gold); color: var(--gold-ink); }
+.teamlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.teamlist .card { padding: 10px 12px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.teamlist .card small { color: var(--muted); display: block; font-size: 13px; }
+.chip-btn { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.chip-btn:hover { border-color: var(--accent); }
+.notes { margin-top: 22px; color: var(--muted); font-size: 14px; max-width: 70ch; }
+.notes li { margin-bottom: 4px; }
+.vs { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--accent); text-align: center; }
+.cmp-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.cmp-row:last-child { border-bottom: 0; }
+.cmp-row .mid { font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); font-weight: 700; text-align: center; min-width: 110px; }
+.cmp-row .l { text-align: right; font-weight: 700; font-size: 18px; }
+.cmp-row .r { text-align: left; font-weight: 700; font-size: 18px; }
+.win { color: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+.empty { color: var(--muted); font-style: italic; }
+/* season schedule */
+.sched { display: grid; gap: 12px; }
+.comp { display: grid; grid-template-columns: 92px 1fr; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; border-left: 6px solid var(--line); }
+.comp.next { border-left-color: var(--accent); }
+.date { text-align: center; }
+.date .m { font-family: var(--font-display); font-weight: 700; font-size: 16px; text-transform: uppercase; color: var(--accent); }
+.date .d { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; }
+.date .c { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 700; }
+.comp ul { margin: 6px 0 0; padding-left: 18px; }
+.comp li { margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+.status { display: inline-block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; padding: 2px 8px; border-radius: 6px; background: var(--bg); color: var(--muted); }
+.status.live { background: var(--accent); color: #fff; }
+.headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+@media (prefers-reduced-motion: no-preference) { .bar i { transition: width .4s ease; } }
+@media (max-width: 640px) { .col-bar { display: none; } table { min-width: 0; } th, td { padding: 9px 8px; } .team-link { font-size: 15px; } .rank { width: 32px; font-size: 20px; } }
+@media (max-width: 420px) { h1 { font-size: 28px; } select, input[type="search"] { min-width: 0; width: 100%; } .controls label { width: 100%; } .comp { grid-template-columns: 70px 1fr; gap: 10px; } }
+.switch { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.switch button { font-family: var(--font-display); font-weight: 700; font-size: 17px; text-transform: uppercase; letter-spacing: .4px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-align: left; line-height: 1.1; }
+.switch button small { display: block; font-family: var(--font-body); font-weight: 600; font-size: 12px; text-transform: none; letter-spacing: 0; color: var(--muted); }
+.switch button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.switch button[aria-pressed="true"] small { color: #fff; }
+.stats.compact { grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 6px; }
+.stats.compact .stat { padding: 8px 10px; }
+.stats.compact .stat b { font-size: 22px; }
+.stats.compact .stat span { font-size: 11px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Cheer Score <span>Tracker</span></h1>
+    <p class="sub">Know who you're up against before the mat.</p>
+    <nav role="tablist" aria-label="Sections">
+      <button role="tab" id="tab-season" aria-controls="panel-season" aria-selected="true" data-view="season">Our Teams</button>
+      <button role="tab" id="tab-preview" aria-controls="panel-preview" aria-selected="false" data-view="preview">Comp Preview</button>
+      <button role="tab" id="tab-teams" aria-controls="panel-teams" aria-selected="false" data-view="teams">Teams</button>
+      <button role="tab" id="tab-compare" aria-controls="panel-compare" aria-selected="false" data-view="compare">Compare</button>
+      <button role="tab" id="tab-seasons" aria-controls="panel-seasons" aria-selected="false" data-view="seasons">Seasons</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- SEASON -->
+  <section class="panel" id="panel-season" role="tabpanel" aria-labelledby="tab-season">
+    <div class="switch" id="ourSwitch" role="group" aria-label="Choose our team"></div>
+    <h2 id="seasonTitle"></h2>
+    <p class="hint">The 2026–27 schedule through the end-of-season championship, with what happened in this division at each competition last season. Each competition's field gets added when the performance order posts, usually about a week before.</p>
+    <div class="headline" id="seasonHead"></div>
+    <div class="card" id="roster27" style="margin-bottom:16px"></div>
+    <div class="sched" id="sched"></div>
+  </section>
+
+  <!-- COMP PREVIEW -->
+  <section class="panel" id="panel-preview" role="tabpanel" aria-labelledby="tab-preview" hidden>
+    <h2>Comp Preview</h2>
+    <p class="hint">Every team in a division, ranked by score coming in. "Last 3 comps" weighs how a team is scoring lately; teams often peak late in the season. Once the competition is over, the real finish shows next to the prediction.</p>
+    <div class="controls">
+      <label for="divSelect">Competition &amp; division
+        <select id="divSelect"></select>
+      </label>
+      <label for="modeSelect">Rank by
+        <select id="modeSelect">
+          <option value="all">Whole-season average</option>
+          <option value="recent">Last 3 comps (recent form)</option>
+        </select>
+      </label>
+    </div>
+    <div id="previewSummary"></div>
+    <div class="tablewrap"><table id="previewTable"></table></div>
+    <div class="legend"><span><span class="best">97.07</span> best score in the field</span><span><span class="pill good">beat prediction</span></span><span><span class="pill warn">below prediction</span></span></div>
+  </section>
+
+  <!-- TEAMS -->
+  <section class="panel" id="panel-teams" role="tabpanel" aria-labelledby="tab-teams" hidden>
+    <h2>Teams</h2>
+    <p class="hint">Search any team to see every score on record, with where each one came from.</p>
+    <div class="controls">
+      <label for="teamSeason">Season
+        <select id="teamSeason"></select>
+      </label>
+      <label for="teamSearch">Search teams
+        <input type="search" id="teamSearch" placeholder="e.g. Vortex, Sugar, JFAB" autocomplete="off">
+      </label>
+    </div>
+    <div id="teamDetail"></div>
+    <div class="teamlist" id="teamList"></div>
+  </section>
+
+  <!-- COMPARE -->
+  <section class="panel" id="panel-compare" role="tabpanel" aria-labelledby="tab-compare" hidden>
+    <h2>Head to Head</h2>
+    <p class="hint">Pick two teams. The stronger number in each row is highlighted.</p>
+    <div class="controls">
+      <label for="cmpA">Team 1 <select id="cmpA"></select></label>
+      <label for="cmpB">Team 2 <select id="cmpB"></select></label>
+      <label for="cmpSeason">Season <select id="cmpSeason"></select></label>
+    </div>
+    <div id="cmpOut"></div>
+  </section>
+
+  <!-- SEASONS -->
+  <section class="panel" id="panel-seasons" role="tabpanel" aria-labelledby="tab-seasons" hidden>
+    <h2>Seasons</h2>
+    <p class="hint">Every season starts from zero. Pick a year to see how each of our teams did and where they stood in their division that year.</p>
+    <div class="switch" id="seasonSwitch" role="group" aria-label="Choose season"></div>
+    <div id="seasonOverview"></div>
+    <h3 style="margin-top:18px">Division standings</h3>
+    <p class="hint">Ranked by season average of the scores on file for that year. Choose a team to see its division.</p>
+    <div class="switch" id="standSwitch" role="group" aria-label="Choose division"></div>
+    <div class="tablewrap"><table id="standTable"></table></div>
+  </section>
+
+</main>
+
+<script>
+/* ======================= OUR TEAMS ======================= */
+const OUR = [
+  { key: "phoenix", team: "Star Athletics Phoenix", div: "L5 Senior Small", eos: "summit" },
+  { key: "onyx", team: "Star Athletics Onyx", div: "L4 Senior Medium", eos: "summit" },
+  { key: "aura", team: "Star Athletics Aura", div: "L4 Junior Small", isNew: true, eos: "summit" },
+  { key: "platinum", team: "Star Athletics Platinum", div: "L4.2 Senior Coed Medium", eos: "summit" },
+  { key: "gold", team: "Star Athletics Gold", div: "L3 Junior Medium", eos: "summit" },
+  { key: "storm", team: "Star Athletics Storm", div: "L2 Junior Flex Small", eos: "summit" },
+  { key: "chrome", team: "Star Athletics Chrome", div: "L1 Junior Small", eos: "summit" },
+  { key: "spark", team: "Star Athletics Spark", div: "L3 Youth Flex Small", eos: "youth" },
+  { key: "glow", team: "Star Athletics Glow", div: "L2 Youth Small", eos: "youth" },
+  { key: "black", team: "Star Athletics Youth Black", div: "L1 Youth Medium", eos: "youth" },
+  { key: "minielite", team: "Star Athletics Mini Elite Neon", div: "L1 Mini Small", eos: "neregional" }
+];
+const OUR_NAMES = new Set(OUR.map(o => o.team));
+let CURRENT = OUR[0];
+
+/* ======================= DATA ======================= */
+const TEAMS = {};   // name -> { results: [{comp, season, date, score, place, round, div}] }
+function add(team, comp, season, date, score, place, round, div) {
+  (TEAMS[team] = TEAMS[team] || { results: [] }).results.push({ comp, season, date, score, place, round, div });
+}
+const EARLY = "Earlier comp";
+const S25 = "2024–25", S26 = "2025–26", S27 = "2026–27";
+const DIVS = { L5SS: "L5 Senior Small", L4SM: "L4 Senior Medium", L4JS: "L4 Junior Small", L42SCM: "L4.2 Senior Coed Medium", L3JM: "L3 Junior Medium", L42SM: "L4.2 Senior Medium",
+  L2JFS: "L2 Junior Flex Small", L2JS: "L2 Junior Small", L1JS: "L1 Junior Small", L3YFS: "L3 Youth Flex Small", L3YS: "L3 Youth Small",
+  L2YS: "L2 Youth Small", L2YM: "L2 Youth Medium", L1YM: "L1 Youth Medium", L1MS: "L1 Mini Small" };
+
+/* ---- 2025–26 published finals results (Cheer Theory) ---- */
+// [division, team, date, competition, place, score]
+const LABELED = [
+  ["L5SS", "Dakota Spirit Apollo", "2025-12-14", "America's Best Grand Nationals", 1, 98.1667],
+  ["L5SS", "Dakota Spirit Apollo", "2026-01-18", "JAMfest Cheer Super Nationals", 1, 98.4834],
+  ["L5SS", "Dakota Spirit Apollo", "2026-02-08", "CSG Grand Nationals", 1, 98.55],
+  ["L5SS", "Dakota Spirit Apollo", "2026-03-01", "NCA All-Star Nationals", 1, 97.6333],
+  ["L5SS", "SCV All Stars Senior Steel", "2026-02-01", "Spirit Sports Grand Nationals", 1, 96.9625],
+  ["L5SS", "SCV All Stars Senior Steel", "2026-03-01", "NCA All-Star Nationals", 4, 95.7167],
+  ["L5SS", "SCV All Stars Senior Steel", "2026-03-15", "USA Cheer Super Nationals", 2, 96.5458],
+  ["L5SS", "ACX MISS M5OW", "2026-02-15", "CHEERSPORT Nationals", 8, 94.8667],
+  ["L5SS", "ACX MISS M5OW", "2026-03-01", "NCA All-Star Nationals", 6, 95.175],
+  ["L5SS", "ACE Cheer Company Phoenix", "2025-12-14", "ASC Battle Under the Big Top", 2, 92.8],
+  ["L5SS", "ACE Cheer Company Phoenix", "2026-02-15", "CHEERSPORT Nationals", null, 93.6333],
+  ["L5SS", "ACE Cheer Company Phoenix", "2026-03-29", "One Up Grand Nationals", 4, 95.5167],
+  ["L5SS", "ATA Lake Norman Vortex", "2026-01-18", "Spirit of Hope Grand Nationals", 1, 96.2042],
+  ["L5SS", "ATA Lake Norman Vortex", "2026-02-15", "CHEERSPORT Nationals", 1, 97.1167],
+  ["L5SS", "ATA Lake Norman Vortex", "2026-02-22", "Coastal at the Capitol", 2, 97.8334],
+  ["L5SS", "ATA Lake Norman Vortex", "2026-03-01", "NCA All-Star Nationals", 2, 96.05],
+  ["L5SS", "ATA Lake Norman Vortex", "2026-03-22", "CANAM Grand Nationals", 1, 97.95],
+  ["L5SS", "ATA Lake Norman Vortex", "2026-03-29", "One Up Grand Nationals", 1, 96.5125],
+  ["L5SS", "Pack Athletics SPICE", "2026-01-18", "Spirit of Hope Grand Nationals", 2, 96.0875],
+  ["L5SS", "Pack Athletics SPICE", "2026-02-08", "CSG Grand Nationals", 2, 98.3],
+  ["L5SS", "Pack Athletics SPICE", "2026-02-22", "Coastal at the Capitol", 1, 98.6167],
+  ["L5SS", "Pack Athletics SPICE", "2026-03-01", "NCA All-Star Nationals", 7, 95.4125],
+  ["L5SS", "Pack Athletics SPICE", "2026-03-29", "One Up Grand Nationals", 5, 94.6708],
+  ["L5SS", "ICE Lunar Ladies", "2025-12-07", "WSF Grand Nationals", 2, 95.7167],
+  ["L5SS", "ICE Lunar Ladies", "2026-02-22", "COA Grand Nationals", 4, 91.6958],
+  ["L5SS", "ICE Lunar Ladies", "2026-03-08", "GLCC Grand Nationals", 3, 95.8459],
+  ["L5SS", "ICE Lunar Ladies", "2026-03-15", "Cheer Power Grand Nationals", 2, 94.8041],
+  ["L5SS", "Top Gun All Stars Rogue", "2026-01-25", "ATC Grand Nationals", 1, 97.2375],
+  ["L5SS", "Top Gun All Stars Rogue", "2026-02-01", "Spirit Sports Grand Nationals", 2, 96.3167],
+  ["L5SS", "Top Gun All Stars Rogue", "2026-03-01", "NCA All-Star Nationals", 1, 96.85],
+  ["L5SS", "Top Gun All Stars Rogue", "2026-03-08", "Aloha Grand Nationals", 1, 97.4667],
+  ["L5SS", "Louisiana Cheer Force Neon", "2026-01-18", "Mardi Gras Grand Nationals", 2, 91.4333],
+  ["L5SS", "Louisiana Cheer Force Neon", "2026-02-15", "CHEERSPORT Nationals", 13, 92.0584],
+  ["L5SS", "Louisiana Cheer Force Neon", "2026-03-01", "NCA All-Star Nationals", 14, 92.3292],
+  ["L5SS", "Louisiana Cheer Force Neon", "2026-03-29", "One Up Grand Nationals", 2, 96.3333],
+  ["L5SS", "Spirit Xtreme Lady X", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 4, 89.7],
+  ["L5SS", "Spirit Xtreme Lady X", "2026-02-15", "CHEERSPORT Nationals", 7, 95.2667],
+  ["L5SS", "Spirit Xtreme Lady X", "2026-03-01", "NCA All-Star Nationals", 2, 96.2833],
+  ["L5SS", "Star Athletics Phoenix", "2026-01-11", "Spirit Cheer Grand Nationals", 2, 92.6875],
+  ["L5SS", "Star Athletics Phoenix", "2026-02-15", "CHEERSPORT Nationals", 4, 95.9708],
+  ["L5SS", "Star Athletics Phoenix", "2026-02-22", "Coastal at the Capitol", 3, 97.1],
+  ["L5SS", "Star Athletics Phoenix", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 1, 95.0209],
+  ["L5SS", "Star Athletics Phoenix", "2026-03-22", "CANAM Grand Nationals", 2, 95.15],
+  ["L5SS", "NFINITE All Stars Lady Bullets", "2026-01-11", "Spirit Cheer Grand Nationals", 1, 96.725],
+  ["L5SS", "NFINITE All Stars Lady Bullets", "2026-02-15", "CHEERSPORT Nationals", 2, 96.6667],
+  ["L5SS", "NFINITE All Stars Lady Bullets", "2026-03-29", "One Up Grand Nationals", null, 95.8625],
+  ["L5SS", "Champion Cheer Lady Light", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 2, 91.6833],
+  ["L5SS", "Champion Cheer Lady Light", "2026-03-01", "NCA All-Star Nationals", 7, 94.8041],
+  ["L5SS", "Champion Cheer Lady Light", "2026-03-08", "Aloha Grand Nationals", 3, 94.2792],
+  ["L5SS", "Infinity Allstars Lady Legends", "2026-02-15", "CHEERSPORT Nationals", 12, 92.8],
+  ["L5SS", "Infinity Allstars Lady Legends", "2026-03-01", "NCA All-Star Nationals", 10, 94.3625],
+  ["L5SS", "Infinity Allstars Lady Legends", "2026-03-15", "UCA All Star Nationals", 1, 95.3167],
+  ["L5SS", "The Cheer Pitt KC Golden Girls", "2026-03-01", "NCA All-Star Nationals", 4, 96.05],
+  ["L5SS", "Woodlands Elite - Humble Commanders", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 3, 91.3333],
+  ["L5SS", "Woodlands Elite - Humble Commanders", "2026-03-01", "NCA All-Star Nationals", 5, 95.65],
+  ["L5SS", "Woodlands Elite - Humble Commanders", "2026-03-29", "One Up Grand Nationals", 6, 93.55],
+  ["L5SS", "KC Cheer FRESH", "2025-12-14", "America's Best Grand Nationals", 3, 93.5042],
+  ["L5SS", "KC Cheer FRESH", "2026-01-18", "Mardi Gras Grand Nationals", 1, 93.6542],
+  ["L5SS", "KC Cheer FRESH", "2026-03-01", "NCA All-Star Nationals", 11, 93.775],
+  ["L5SS", "KC Cheer FRESH", "2026-03-29", "One Up Grand Nationals", 4, 94.975],
+  ["L5SS", "Ultimate Athletics LEGACY", "2025-12-07", "WSF Grand Nationals", 1, 95.9333],
+  ["L5SS", "Ultimate Athletics LEGACY", "2026-01-18", "JAMfest Cheer Super Nationals", 4, 95.5125],
+  ["L5SS", "Ultimate Athletics LEGACY", "2026-02-08", "CSG Grand Nationals", 3, 95.35],
+  ["L5SS", "Ultimate Athletics LEGACY", "2026-02-15", "CHEERSPORT Nationals", 3, 96.0917],
+  ["L5SS", "Ultimate Athletics LEGACY", "2026-03-01", "NCA All-Star Nationals", 3, 96.0833],
+  ["L5SS", "Ultimate Athletics LEGACY", "2026-03-08", "GLCC Grand Nationals", 2, 96.7625],
+  ["L5SS", "Natural Venom All Stars G.I. Janes", "2026-01-25", "ATC Grand Nationals", 3, 91.225],
+  ["L5SS", "Natural Venom All Stars G.I. Janes", "2026-03-01", "NCA All-Star Nationals", 12, 93.1583],
+  ["L5SS", "Cheer Athletics - Columbus ZeusCats", "2026-02-22", "COA Grand Nationals", 1, 96.2667],
+  ["L5SS", "Cheer Athletics - Columbus ZeusCats", "2026-03-01", "NCA All-Star Nationals", 3, 95.8167],
+  ["L5SS", "Cheer Athletics - Columbus ZeusCats", "2026-03-15", "Cheer Power Grand Nationals", 1, 97.95],
+  ["L5SS", "Woodlands Elite - Katy Shell Shock", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 1, 92.8167],
+  ["L5SS", "Woodlands Elite - Katy Shell Shock", "2025-12-14", "Encore Grand Nationals", null, 93.6584],
+  ["L5SS", "Woodlands Elite - Katy Shell Shock", "2026-03-01", "NCA All-Star Nationals", 5, 96.0167],
+  ["L5SS", "Woodlands Elite - Katy Shell Shock", "2026-03-29", "One Up Grand Nationals", 1, 97.1167],
+  ["L5SS", "OC All Stars Smoke", "2026-01-11", "GSSA Grand Nationals", 1, 94.6375],
+  ["L5SS", "OC All Stars Smoke", "2026-02-01", "ACA Grand Nationals", 3, 90.7208],
+  ["L5SS", "OC All Stars Smoke", "2026-03-15", "USA Cheer Super Nationals", 3, 95.3417],
+  ["L5SS", "Spirit Central Bengals", "2026-03-15", "Spirit Fest Grand Nationals", 2, 96.5209],
+  ["L5SS", "Spirit Central Bengals", "2026-03-22", "CANAM Grand Nationals", 3, 94.3167],
+  ["L5SS", "Steele Athletics - Northern CO Smoke", "2026-02-01", "ACA Grand Nationals", 1, 93.9333],
+  ["L5SS", "Steele Athletics - Northern CO Smoke", "2026-03-01", "NCA All-Star Nationals", 11, 93.3667],
+  ["L5SS", "Steele Athletics - Northern CO Smoke", "2026-03-08", "Aloha Grand Nationals", 2, 96.75],
+  ["L5SS", "Elite Cheer Odyssey", "2025-12-14", "America's Best Grand Nationals", 2, 94.9042],
+  ["L5SS", "Elite Cheer Odyssey", "2026-03-01", "NCA All-Star Nationals", 9, 94.5417],
+  ["L5SS", "Elite Cheer Odyssey", "2026-03-29", "One Up Grand Nationals", 6, 94.6],
+  ["L5SS", "ATA Bla5t", "2025-12-14", "ASC Battle Under the Big Top", 1, 93.9333],
+  ["L5SS", "ATA Bla5t", "2026-01-18", "JAMfest Cheer Super Nationals", 3, 95.7167],
+  ["L5SS", "ATA Bla5t", "2026-02-15", "CHEERSPORT Nationals", 5, 95.9667],
+  ["L5SS", "ATA Bla5t", "2026-03-01", "NCA All-Star Nationals", 6, 95.4958],
+  ["L5SS", "ATA Bla5t", "2026-03-29", "One Up Grand Nationals", 7, 94.4167],
+  ["L5SS", "Cheer Athletics Omaha Lady Dynasty", "2025-12-14", "America's Best Grand Nationals", 5, 91.3292],
+  ["L5SS", "Cheer Athletics Omaha Lady Dynasty", "2026-01-18", "JAMfest Cheer Super Nationals", 9, 90.1958],
+  ["L5SS", "Cheer Athletics Omaha Lady Dynasty", "2026-03-15", "USA Cheer Super Nationals", 1, 96.825],
+  ["L5SS", "Stars Vipers Katy Cobra Kai", "2026-02-01", "ACA Grand Nationals", 2, 92.6917],
+  ["L5SS", "Stars Vipers Katy Cobra Kai", "2026-03-01", "NCA All-Star Nationals", 9, 93.9125],
+  ["L5SS", "Connect Cheer Northwest Blush", "2026-01-25", "ATC Grand Nationals", 2, 92.5083],
+  ["L5SS", "Connect Cheer Northwest Blush", "2026-02-01", "Spirit Sports Grand Nationals", 3, 92.6542],
+  ["L5SS", "Connect Cheer Northwest Blush", "2026-03-01", "PacWest Grand Nationals", 1, 96.5292],
+  ["L5SS", "Cheer Extreme Kernersville Bombshells", "2026-01-18", "JAMfest Cheer Super Nationals", 6, 92.275],
+  ["L5SS", "Cheer Extreme Kernersville Bombshells", "2026-02-15", "CHEERSPORT Nationals", 9, 94.7667],
+  ["L5SS", "Cheer Extreme Kernersville Bombshells", "2026-03-15", "UCA All Star Nationals", 2, 92.7542],
+  ["L5SS", "Cheer Extreme Kernersville Bombshells", "2026-03-29", "One Up Grand Nationals", 3, 96.1125],
+  ["L5SS", "Cheer Athletics - Lexington Pharoah Cats", "2025-12-07", "WSF Grand Nationals", 4, 90.8042],
+  ["L5SS", "Cheer Athletics - Lexington Pharoah Cats", "2026-01-18", "JAMfest Cheer Super Nationals", 7, 91.4917],
+  ["L5SS", "Cheer Athletics - Lexington Pharoah Cats", "2026-03-29", "One Up Grand Nationals", 5, 93.6417],
+  ["L5SS", "Cheer Force Arkansas Charm", "2026-01-18", "JAMfest Cheer Super Nationals", 8, 91.2167],
+  ["L5SS", "Cheer Force Arkansas Charm", "2026-02-15", "CHEERSPORT Nationals", 11, 93.3917],
+  ["L5SS", "Cheer Force Arkansas Charm", "2026-03-01", "NCA All-Star Nationals", 8, 94.225],
+  ["L5SS", "Cheer Extreme - Raleigh Medu5a", "2025-12-14", "ASC Battle Under the Big Top", 3, 92.275],
+  ["L5SS", "Cheer Extreme - Raleigh Medu5a", "2026-01-18", "JAMfest Cheer Super Nationals", 2, 96.2458],
+  ["L5SS", "Cheer Extreme - Raleigh Medu5a", "2026-03-01", "NCA All-Star Nationals", 8, 95.2208],
+  ["L5SS", "Cheer Extreme - Raleigh Medu5a", "2026-03-29", "One Up Grand Nationals", 2, 96.65],
+  ["L5SS", "The Stingray Allstars Lady Luck", "2026-02-15", "CHEERSPORT Nationals", 14, 86.4875],
+  ["L5SS", "The Stingray Allstars Lady Luck", "2026-03-22", "CANAM Grand Nationals", 5, 89.6042],
+  ["L5SS", "ICE Weather Girls", "2026-01-18", "JAMfest Cheer Super Nationals", 5, 93.0083],
+  ["L5SS", "ICE Weather Girls", "2026-03-01", "NCA All-Star Nationals", 13, 93.4959],
+  ["L5SS", "Cheer Extreme Odenton Rays", "2026-02-22", "Coastal at the Capitol", 4, 93.15],
+  ["L5SS", "Cheer Extreme Odenton Rays", "2026-03-22", "CANAM Grand Nationals", 4, 91.3625],
+  ["L4SM", "Star Athletics Onyx", "2026-01-11", "Spirit Cheer Grand Nationals", 3, 95.2792],
+  ["L4SM", "Star Athletics Onyx", "2026-02-15", "CHEERSPORT Nationals", 4, 97.0667],
+  ["L4SM", "Star Athletics Onyx", "2026-02-22", "Coastal at the Capitol", 2, 96.35],
+  ["L4SM", "Star Athletics Onyx", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 2, 97.2667],
+  ["L4SM", "Star Athletics Onyx", "2026-03-22", "CANAM Grand Nationals", 3, 91.2209],
+  ["L4SM", "The Stingray Allstars Sugar", "2025-12-14", "ASC Battle Under the Big Top", 1, 95.7125],
+  ["L4SM", "The Stingray Allstars Sugar", "2026-01-18", "JAMfest Cheer Super Nationals", 1, 97.4167],
+  ["L4SM", "The Stingray Allstars Sugar", "2026-02-15", "CHEERSPORT Nationals", 3, 97.1458],
+  ["L4SM", "The Stingray Allstars Sugar", "2026-03-01", "NCA All-Star Nationals", 5, 95.1208],
+  ["L4SM", "The Stingray Allstars Sugar", "2026-03-29", "One Up Grand Nationals", 1, 97.5167],
+  ["L4SM", "Spirit of Texas Royal Divas", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 1, 95.8875],
+  ["L4SM", "Spirit of Texas Royal Divas", "2026-02-01", "ACA Grand Nationals", 1, 97.6042],
+  ["L4SM", "Spirit of Texas Royal Divas", "2026-02-15", "CHEERSPORT Nationals", 5, 96.0875],
+  ["L4SM", "Spirit of Texas Royal Divas", "2026-03-01", "NCA All-Star Nationals", 4, 95.7375],
+  ["L4SM", "ATA Lake Norman Matrix", "2026-01-18", "Spirit of Hope Grand Nationals", 2, 95.2917],
+  ["L4SM", "ATA Lake Norman Matrix", "2026-02-15", "CHEERSPORT Nationals", 8, 94.725],
+  ["L4SM", "ATA Lake Norman Matrix", "2026-02-22", "Coastal at the Capitol", 1, 96.9875],
+  ["L4SM", "ATA Lake Norman Matrix", "2026-03-22", "CANAM Grand Nationals", 2, 94.625],
+  ["L4SM", "ATA Lake Norman Matrix", "2026-03-29", "One Up Grand Nationals", 7, 93.3167],
+  ["L4SM", "FAME All Stars - Midlo Lady Crush", "2026-01-18", "JAMfest Cheer Super Nationals", 3, 95.7667],
+  ["L4SM", "FAME All Stars - Midlo Lady Crush", "2026-02-22", "Coastal at the Capitol", 3, 96.3458],
+  ["L4SM", "Cheer Athletics - Plano Sassycats", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 2, 95.6],
+  ["L4SM", "Cheer Athletics - Plano Sassycats", "2026-02-01", "ACA Grand Nationals", 2, 97.55],
+  ["L4SM", "Cheer Athletics - Plano Sassycats", "2026-02-15", "CHEERSPORT Nationals", 1, 97.7],
+  ["L4SM", "Cheer Athletics - Plano Sassycats", "2026-03-01", "NCA All-Star Nationals", 1, 97.6125],
+  ["L4SM", "USA Wildcats C4", "2026-02-22", "Coastal at the Capitol", 4, 96.3167],
+  ["L4SM", "USA Wildcats C4", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 3, 96.9958],
+  ["L4SM", "USA Wildcats C4", "2026-03-22", "CANAM Grand Nationals", 1, 94.9875],
+  ["L4SM", "ICE Storm", "2026-01-18", "JAMfest Cheer Super Nationals", 2, 95.9667],
+  ["L4SM", "ICE Storm", "2026-03-01", "NCA All-Star Nationals", 6, 92.0792],
+  ["L4SM", "Top Gun All Stars 24k", "2025-12-14", "Spirit Cheer Dance Grand Nationals", 1, 96.0708],
+  ["L4SM", "Top Gun All Stars 24k", "2026-02-15", "CHEERSPORT Nationals", 2, 97.4958],
+  ["L4SM", "Top Gun All Stars 24k", "2026-03-29", "One Up Grand Nationals", 3, 95.8958],
+  ["L4SM", "All-Star Revolution Victory", "2026-02-01", "ACA Grand Nationals", 3, 97.2875],
+  ["L4SM", "All-Star Revolution Victory", "2026-03-01", "NCA All-Star Nationals", 3, 96.0875],
+  ["L4SM", "All-Star Revolution Victory", "2026-03-29", "One Up Grand Nationals", 2, 96.5458],
+  ["L4SM", "Memphis Pride Cheer BlackSmack", "2025-12-14", "ASC Battle Under the Big Top", 2, 93.75],
+  ["L4SM", "Memphis Pride Cheer BlackSmack", "2026-03-15", "UCA All Star Nationals", 1, 94.8667],
+  ["L4SM", "Memphis Pride Cheer BlackSmack", "2026-03-29", "One Up Grand Nationals", 8, 90.8625],
+  ["L4SM", "Premier Athletics - Knoxville West Great White Sharks", "2026-01-18", "Spirit of Hope Grand Nationals", 1, 96.2375],
+  ["L4SM", "Premier Athletics - Knoxville West Great White Sharks", "2026-02-15", "CHEERSPORT Nationals", 7, 94.9583],
+  ["L4SM", "Premier Athletics - Knoxville West Great White Sharks", "2026-03-29", "One Up Grand Nationals", 4, 95.5291],
+  ["L4SM", "Connect Cheer Northwest Steel", "2026-01-25", "ATC Grand Nationals", 2, 97.2042],
+  ["L4SM", "Connect Cheer Northwest Steel", "2026-02-01", "Spirit Sports Grand Nationals", 2, 93.6792],
+  ["L4SM", "Connect Cheer Northwest Steel", "2026-03-01", "PacWest Grand Nationals", 2, 96.6125],
+  ["L4SM", "Oregon Dream Teams Vanity", "2026-01-25", "ATC Grand Nationals", 1, 98.2875],
+  ["L4SM", "Oregon Dream Teams Vanity", "2026-03-01", "PacWest Grand Nationals", 1, 96.8833],
+  ["L4SM", "The California All Stars - Livermore Swagg", "2026-01-11", "GSSA Grand Nationals", 1, 96.5],
+  ["L4SM", "The California All Stars - Livermore Swagg", "2026-02-01", "Spirit Sports Grand Nationals", 1, 96.7167],
+  ["L4SM", "The California All Stars - Livermore Swagg", "2026-03-01", "NCA All-Star Nationals", 2, 97.25],
+  ["L4SM", "The California All Stars - Livermore Swagg", "2026-03-15", "USA Cheer Super Nationals", 1, 98.3833],
+  ["L4SM", "Premier Athletics Columbia WOLFPAC- ONYX", "2026-02-15", "CHEERSPORT Nationals", 6, 96.05],
+  ["L4SM", "Premier Athletics Columbia WOLFPAC- ONYX", "2026-03-29", "One Up Grand Nationals", 6, 94.6042],
+  ["L4SM", "GymTyme All-Stars Diamonds", "2025-12-07", "WSF Grand Nationals", 2, 94.6167],
+  ["L4SM", "GymTyme All-Stars Diamonds", "2026-01-18", "JAMfest Cheer Super Nationals", 4, 94.5583],
+  ["L4SM", "GymTyme All-Stars Diamonds", "2026-03-08", "GLCC Grand Nationals", 2, 97.5042],
+  ["L4SM", "GymTyme All-Stars Diamonds", "2026-03-29", "One Up Grand Nationals", 5, 94.8917],
+  ["L4SM", "ICE Phoenix", "2026-02-22", "COA Grand Nationals", 1, 95.8708],
+  ["L4SM", "ICE Phoenix", "2026-03-08", "GLCC Grand Nationals", 1, 98.125],
+  ["L4SM", "ICE Phoenix", "2026-03-15", "Cheer Power Grand Nationals", 1, 98.0167],
+  ["L4SM", "ACE Cheer Company Sharp Shooters", "2026-01-18", "Mardi Gras Grand Nationals", 1, 90.3708],
+  ["L4SM", "ACE Cheer Company Sharp Shooters", "2026-02-15", "CHEERSPORT Nationals", 9, 93.7833],
+  ["L4SM", "FAME All Stars - VA Beach GLAM", "2026-02-22", "Coastal at the Capitol", 5, 95.4042],
+  ["L4SM", "FAME All Stars - VA Beach GLAM", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 1, 97.5833],
+  ["L4SM", "FAME All Stars - VA Beach GLAM", "2026-03-29", "ACDA Reach the Beach Grand Nationals", 1, 97.85],
+  ["L4SM", "Cheer Athletics - Chicago Lady Blaze", "2026-01-18", "JAMfest Cheer Super Nationals", 6, 87.0125],
+  ["L4SM", "Cheer Athletics - Chicago Lady Blaze", "2026-02-08", "CSG Grand Nationals", 1, 83.625],
+  ["L4SM", "Cheer Athletics - Chicago Lady Blaze", "2026-03-08", "GLCC Grand Nationals", 4, 83.3],
+  ["L4SM", "World Elite Legacy", "2026-01-18", "JAMfest Cheer Super Nationals", 5, 94.5334],
+  ["L4SM", "World Elite Legacy", "2026-02-15", "CHEERSPORT Nationals", 10, 93.6417],
+  ["L4SM", "World Elite Legacy", "2026-02-22", "COA Grand Nationals", 2, 94.7],
+  ["L4JS", "Rival Athletics Revenge", "2026-02-01", "Spirit Sports Grand Nationals", 1, 98.2334],
+  ["L4JS", "Rival Athletics Revenge", "2026-02-15", "CHEERSPORT Nationals", 2, 96.6042],
+  ["L4JS", "Rival Athletics Revenge", "2026-03-01", "NCA All-Star Nationals", 3, 96.825],
+  ["L4JS", "Rival Athletics Revenge", "2026-03-29", "One Up Grand Nationals", 1, 97.3333],
+  ["L4JS", "Nor Cal Elite All Stars Aurora", "2025-12-14", "Encore Grand Nationals", null, 94.8041],
+  ["L4JS", "Nor Cal Elite All Stars Aurora", "2026-02-15", "CHEERSPORT Nationals", 5, 95.1333],
+  ["L4JS", "Nor Cal Elite All Stars Aurora", "2026-03-01", "NCA All-Star Nationals", 2, 96.8292],
+  ["L4JS", "Nor Cal Elite All Stars Aurora", "2026-03-15", "USA Cheer Super Nationals", 1, 97.7042],
+  ["L4JS", "Pittsburgh Pride All Stars Junior Reign", "2025-12-07", "WSF Grand Nationals", 1, 96.4083],
+  ["L4JS", "Pittsburgh Pride All Stars Junior Reign", "2026-01-18", "Spirit of Hope Grand Nationals", 3, 95.025],
+  ["L4JS", "Pittsburgh Pride All Stars Junior Reign", "2026-03-15", "Cheer Power Grand Nationals", 1, 97.9125],
+  ["L4JS", "Pittsburgh Pride All Stars Junior Reign", "2026-03-29", "ACDA Reach the Beach Grand Nationals", 1, 98.8167],
+  ["L4JS", "Dakota Spirit Enfuego", "2025-12-14", "America's Best Grand Nationals", 1, 97.0],
+  ["L4JS", "Dakota Spirit Enfuego", "2026-01-18", "JAMfest Cheer Super Nationals", 1, 96.7167],
+  ["L4JS", "Dakota Spirit Enfuego", "2026-02-08", "CSG Grand Nationals", 1, 98.2833],
+  ["L4JS", "Dakota Spirit Enfuego", "2026-03-01", "NCA All-Star Nationals", 1, 97.5833],
+  ["L4JS", "ACE Cheer Company Braves", "2025-12-14", "ASC Battle Under the Big Top", 1, 94.2917],
+  ["L4JS", "ACE Cheer Company Braves", "2026-01-18", "Mardi Gras Grand Nationals", 1, 96.7291],
+  ["L4JS", "ACE Cheer Company Braves", "2026-02-15", "CHEERSPORT Nationals", 1, 96.7667],
+  ["L4JS", "Maryland Twisters Smoke", "2025-12-07", "Champion Cheer and Dance Grand Nationals", 1, 95.6375],
+  ["L4JS", "Maryland Twisters Smoke", "2026-01-18", "Spirit of Hope Grand Nationals", 2, 95.1333],
+  ["L4JS", "Maryland Twisters Smoke", "2026-02-15", "CHEERSPORT Nationals", 6, 94.5584],
+  ["L4JS", "Maryland Twisters Smoke", "2026-03-29", "ACDA Reach the Beach Grand Nationals", 3, 97.4875],
+  ["L4JS", "Phoenix Elite Fever", "2026-03-01", "NCA All-Star Nationals", 6, 95.2167],
+  ["L4JS", "Twist & Shout Norman Bliss", "2025-12-14", "America's Best Grand Nationals", 2, 94.7792],
+  ["L4JS", "Twist & Shout Norman Bliss", "2026-02-01", "ACA Grand Nationals", 1, 94.25],
+  ["L4JS", "Twist & Shout Norman Bliss", "2026-03-01", "NCA All-Star Nationals", 4, 96.5458],
+  ["L4JS", "Cheer Athletics - Frisco G-4ce Jags", "2025-12-14", "America's Best Grand Nationals", 3, 94.5792],
+  ["L4JS", "Cheer Athletics - Frisco G-4ce Jags", "2026-02-01", "ACA Grand Nationals", 2, 92.9709],
+  ["L4JS", "Cheer Athletics - Frisco G-4ce Jags", "2026-03-01", "NCA All-Star Nationals", 8, 93.175],
+  ["L4JS", "Star Athletics ATL Crush", "2025-12-14", "ASC Battle Under the Big Top", 2, 92.6083],
+  ["L4JS", "Star Athletics ATL Crush", "2026-01-18", "Spirit of Hope Grand Nationals", 1, 96.8167],
+  ["L4JS", "Star Athletics ATL Crush", "2026-02-15", "CHEERSPORT Nationals", 3, 95.3667],
+  ["L4JS", "Star Athletics ATL Crush", "2026-02-22", "Coastal at the Capitol", 1, 96.9667],
+  ["L4JS", "Star Athletics ATL Crush", "2026-03-29", "One Up Grand Nationals", 2, 95.295],
+  ["L4JS", "New Jersey Spirit Explosion JFAB", "2026-01-18", "Mardi Gras Grand Nationals", 2, 96.25],
+  ["L4JS", "New Jersey Spirit Explosion JFAB", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 2, 97.15],
+  ["L4JS", "New Jersey Spirit Explosion JFAB", "2026-03-22", "CANAM Grand Nationals", 1, 96.8667],
+  ["L4JS", "GU Shamrocks 4 Leaf Clovers", "2026-01-18", "JAMfest Cheer Super Nationals", 3, 95.3125],
+  ["L4JS", "GU Shamrocks 4 Leaf Clovers", "2026-02-22", "COA Grand Nationals", 3, 94.0583],
+  ["L4JS", "Charlotte Allstar Cheerleading Steel", "2026-01-18", "JAMfest Cheer Super Nationals", 6, 93.55],
+  ["L4JS", "Charlotte Allstar Cheerleading Steel", "2026-02-22", "Coastal at the Capitol", 5, 94.4],
+  ["L4JS", "Long Island Cheer Prodigy", "2026-02-22", "Coastal at the Capitol", 2, 96.4667],
+  ["L4JS", "Long Island Cheer Prodigy", "2026-03-29", "One Up Grand Nationals", 3, 94.8],
+  ["L4JS", "Upper Merion All Stars Ice", "2026-01-18", "Spirit of Hope Grand Nationals", 4, 93.8041],
+  ["L4JS", "Upper Merion All Stars Ice", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 1, 97.2833],
+  ["L4JS", "Upper Merion All Stars Ice", "2026-03-15", "UCA All Star Nationals", 1, 97.2333],
+  ["L4JS", "Upper Merion All Stars Ice", "2026-03-29", "ACDA Reach the Beach Grand Nationals", 4, 97.1292],
+  ["L4JS", "Cheer Athletics - Dallas Junior Couture", "2026-01-18", "JAMfest Cheer Super Nationals", 2, 96.1542],
+  ["L4JS", "Cheer Athletics - Dallas Junior Couture", "2026-03-01", "NCA All-Star Nationals", 7, 93.9916],
+  ["L4JS", "Platinum Athletics PAC Dynasty", "2025-12-07", "Champion Cheer and Dance Grand Nationals", 3, 93.6833],
+  ["L4JS", "Platinum Athletics PAC Dynasty", "2026-03-29", "One Up Grand Nationals", 5, 94.1417],
+  ["L4JS", "Formula Cheer Nightmares", "2026-01-18", "JAMfest Cheer Super Nationals", 5, 94.6292],
+  ["L4JS", "Formula Cheer Nightmares", "2026-03-08", "GLCC Grand Nationals", 1, 96.9084],
+  ["L4JS", "Inspire Athletics Obsession", "2026-01-18", "Spirit of Hope Grand Nationals", 5, 93.0792],
+  ["L4JS", "Inspire Athletics Obsession", "2026-02-15", "CHEERSPORT Nationals", 4, 95.1792],
+  ["L4JS", "Inspire Athletics Obsession", "2026-02-22", "Coastal at the Capitol", 4, 94.9916],
+  ["L42SM", "Star Athletics Platinum", "2026-01-11", "Spirit Cheer Grand Nationals", 2, 93.6292],
+  ["L42SM", "Star Athletics Platinum", "2026-02-15", "CHEERSPORT Nationals", 4, 95.8333],
+  ["L42SM", "Star Athletics Platinum", "2026-02-22", "Coastal at the Capitol", 1, 97.8459],
+  ["L42SM", "Star Athletics Platinum", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 1, 97.65],
+  ["L42SM", "Star Athletics Platinum", "2026-03-22", "CANAM Grand Nationals", 2, 97.625],
+  ["L3JM", "Star Athletics Gold", "2026-01-11", "Spirit Cheer Grand Nationals", 2, 97.0167],
+  ["L3JM", "Star Athletics Gold", "2026-02-15", "CHEERSPORT Nationals", 1, 98.1667],
+  ["L3JM", "Star Athletics Gold", "2026-02-22", "Coastal at the Capitol", 1, 97.15],
+  ["L3JM", "Star Athletics Gold", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 1, 97.3333],
+  ["L3JM", "Star Athletics Gold", "2026-03-22", "CANAM Grand Nationals", 1, 97.5167],
+  ["L42SCM", "Cheer Extreme - Raleigh LV", "2025-12-14", "ASC Battle Under the Big Top", 2, 93.75],
+  ["L42SCM", "Cheer Extreme - Raleigh LV", "2026-01-18", "JAMfest Cheer Super Nationals", 1, 96.0417],
+  ["L42SCM", "Cheer Extreme - Raleigh LV", "2026-02-15", "CHEERSPORT Nationals", 3, 96.75],
+  ["L42SCM", "Cheer Extreme - Raleigh LV", "2026-03-01", "NCA All-Star Nationals", 1, 98.6],
+  ["L42SCM", "Cheer Extreme - Raleigh LV", "2026-03-29", "One Up Grand Nationals", 1, 97.3792],
+  ["L42SCM", "The California All Stars - Ontario Electric", "2025-12-21", "The American Grand Grand Nationals", 1, 97.7334],
+  ["L42SCM", "The California All Stars - Ontario Electric", "2026-02-01", "Spirit Sports Grand Nationals", 2, 97.45],
+  ["L42SCM", "The California All Stars - Ontario Electric", "2026-03-01", "NCA All-Star Nationals", 2, 98.5834],
+  ["L42SCM", "The California All Stars - Ontario Electric", "2026-03-08", "GLCC Grand Nationals", 1, 97.6625],
+  ["L42SCM", "The California All Stars - Ontario Electric", "2026-03-15", "USA Cheer Super Nationals", 1, 98.7667],
+  ["L42SCM", "Cheer Extreme Kernersville Spotlight", "2026-01-18", "JAMfest Cheer Super Nationals", 2, 95.9875],
+  ["L42SCM", "Cheer Extreme Kernersville Spotlight", "2026-02-15", "CHEERSPORT Nationals", 1, 97.85],
+  ["L42SCM", "Cheer Extreme Kernersville Spotlight", "2026-03-01", "NCA All-Star Nationals", 4, 97.8875],
+  ["L42SCM", "Cheer Extreme Kernersville Spotlight", "2026-03-15", "UCA All Star Nationals", 1, 96.5542],
+  ["L42SCM", "Cheer Extreme Kernersville Spotlight", "2026-03-29", "One Up Grand Nationals", 4, 95.8708],
+  ["L42SCM", "ATA Oxygen", "2025-12-14", "ASC Battle Under the Big Top", 1, 94.825],
+  ["L42SCM", "ATA Oxygen", "2026-01-18", "JAMfest Cheer Super Nationals", 3, 94.4458],
+  ["L42SCM", "ATA Oxygen", "2026-02-15", "CHEERSPORT Nationals", 2, 96.8292],
+  ["L42SCM", "ATA Oxygen", "2026-03-01", "NCA All-Star Nationals", 5, 96.6458],
+  ["L42SCM", "ATA Oxygen", "2026-03-29", "One Up Grand Nationals", 2, 96.3],
+  ["L42SCM", "Spirit Xtreme Passion", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 1, 92.2792],
+  ["L42SCM", "Spirit Xtreme Passion", "2026-02-15", "CHEERSPORT Nationals", 5, 94.9875],
+  ["L42SCM", "Spirit Xtreme Passion", "2026-03-01", "NCA All-Star Nationals", 6, 96.3875],
+  ["L42SCM", "Woodlands Elite - Humble Blue Angels", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 2, 92.1],
+  ["L42SCM", "Woodlands Elite - Humble Blue Angels", "2026-03-01", "NCA All-Star Nationals", 7, 94.3458],
+  ["L42SCM", "Woodlands Elite - Humble Blue Angels", "2026-03-29", "One Up Grand Nationals", 5, 95.6375],
+  ["L42SCM", "Phoenix Elite Blush", "2026-03-01", "NCA All-Star Nationals", 8, 94.2542],
+  ["L42SCM", "The Stingray Allstars Chill", "2026-02-15", "CHEERSPORT Nationals", 6, 93.3792],
+  ["L42SCM", "The Stingray Allstars Chill", "2026-03-29", "ACDA Reach the Beach Grand Nationals", 1, 95.225],
+  ["L42SCM", "Top Gun All Stars Saviors", "2025-12-14", "Spirit Cheer Dance Grand Nationals", 1, 96.15],
+  ["L42SCM", "Top Gun All Stars Saviors", "2026-02-15", "CHEERSPORT Nationals", 4, 95.6125],
+  ["L42SCM", "Top Gun All Stars Saviors", "2026-03-29", "One Up Grand Nationals", 3, 96.0667],
+  ["L42SCM", "The California All Stars - Tucson Legends", "2026-01-25", "ATC Grand Nationals", 2, 92.4292],
+  ["L42SCM", "The California All Stars - Tucson Legends", "2026-03-08", "Aloha Grand Nationals", 1, 96.0583],
+  ["L42SCM", "Cheer Athletics - Denver Winter Soldiers", "2026-02-01", "Spirit Sports Grand Nationals", 1, 97.9417],
+  ["L42SCM", "Cheer Athletics - Denver Winter Soldiers", "2026-03-01", "NCA All-Star Nationals", 3, 98.3334],
+  ["L3JM", "Louisiana Cheer Force Pink", "2026-01-18", "Mardi Gras Grand Nationals", 2, 94.9417],
+  ["L3JM", "Louisiana Cheer Force Pink", "2026-02-15", "CHEERSPORT Nationals", 3, 97.0542],
+  ["L3JM", "Louisiana Cheer Force Pink", "2026-03-01", "NCA All-Star Nationals", 4, 97.8834],
+  ["L3JM", "Louisiana Cheer Force Pink", "2026-03-29", "One Up Grand Nationals", 4, 96.9875],
+  ["L3JM", "Central Jersey All Stars Bombsquad", "2025-12-07", "WSF Grand Nationals", 1, 98.7167],
+  ["L3JM", "Central Jersey All Stars Bombsquad", "2026-01-11", "Spirit Cheer Grand Nationals", 1, 97.8666],
+  ["L3JM", "Central Jersey All Stars Bombsquad", "2026-03-01", "NCA All-Star Nationals", 6, 97.3541],
+  ["L3JM", "Central Jersey All Stars Bombsquad", "2026-03-29", "One Up Grand Nationals", 1, 97.9667],
+  ["L3JM", "The California All Stars - Livermore J Fab", "2026-01-11", "GSSA Grand Nationals", 1, 97.9792],
+  ["L3JM", "The California All Stars - Livermore J Fab", "2026-02-01", "Spirit Sports Grand Nationals", 1, 98.0667],
+  ["L3JM", "The California All Stars - Livermore J Fab", "2026-03-01", "NCA All-Star Nationals", 2, 98.4334],
+  ["L3JM", "The California All Stars - Livermore J Fab", "2026-03-15", "USA Cheer Super Nationals", 1, 98.0125],
+  ["L3JM", "All-Star Revolution Liberty", "2026-02-01", "ACA Grand Nationals", 1, 97.1125],
+  ["L3JM", "All-Star Revolution Liberty", "2026-03-01", "NCA All-Star Nationals", 1, 98.8334],
+  ["L3JM", "All-Star Revolution Liberty", "2026-03-29", "One Up Grand Nationals", 2, 97.2792],
+  ["L3JM", "Top Gun All Stars Rubies", "2026-01-18", "JAMfest Cheer Super Nationals", 3, 97.4417],
+  ["L3JM", "Top Gun All Stars Rubies", "2026-03-15", "Cheer Power Grand Nationals", 5, 97.1583],
+  ["L3JM", "Top Gun All Stars Rubies", "2026-03-29", "One Up Grand Nationals", 3, 97.1333],
+  ["L3JM", "East Celebrity Elite - Hingham JEMS", "2026-02-01", "Athletic Championships Grand Nationals", 1, 95.3375],
+  ["L3JM", "East Celebrity Elite - Hingham JEMS", "2026-02-15", "CHEERSPORT Nationals", 4, 96.6167],
+  ["L3JM", "East Celebrity Elite - Hingham JEMS", "2026-03-15", "Spirit Fest Grand Nationals", 2, 93.8542],
+  ["L3JM", "Upper Merion All Stars Frost", "2026-01-18", "Spirit of Hope Grand Nationals", 1, 96.25],
+  ["L3JM", "Upper Merion All Stars Frost", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 2, 96.0125],
+  ["L3JM", "Upper Merion All Stars Frost", "2026-03-15", "UCA All Star Nationals", 5, 95.9833],
+  ["L3JM", "Upper Merion All Stars Frost", "2026-03-29", "ACDA Reach the Beach Grand Nationals", 1, 97.0208],
+  ["L3JM", "Stars Vipers V3nom", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 4, 94.3625],
+  ["L3JM", "Stars Vipers V3nom", "2026-02-01", "ACA Grand Nationals", 2, 96.8],
+  ["L3JM", "Stars Vipers V3nom", "2026-02-15", "CHEERSPORT Nationals", 2, 98.0833],
+  ["L3JM", "Stars Vipers V3nom", "2026-03-01", "NCA All-Star Nationals", 3, 98.25],
+  ["L3JM", "Stars Vipers V3nom", "2026-03-29", "One Up Grand Nationals", 6, 96.3],
+  ["L3JM", "East Celebrity Elite Wonder Girls", "2026-01-11", "Spirit Cheer Grand Nationals", 3, 96.35],
+  ["L3JM", "East Celebrity Elite Wonder Girls", "2026-02-01", "Athletic Championships Grand Nationals", 3, 95.0542],
+  ["L3JM", "East Celebrity Elite Wonder Girls", "2026-02-15", "CHEERSPORT Nationals", 6, 95.875],
+  ["L3JM", "East Celebrity Elite Wonder Girls", "2026-03-15", "Spirit Fest Grand Nationals", 1, 96.8708],
+  ["L3JM", "East Celebrity Elite Wonder Girls", "2026-03-29", "One Up Grand Nationals", 7, 95.2167],
+  ["L3JM", "The Stingray Allstars Titan", "2026-03-29", "ACDA Reach the Beach Grand Nationals", 2, 96.45],
+  ["L3JM", "Spirit of Texas Purple Aces", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 2, 94.4375],
+  ["L3JM", "Spirit of Texas Purple Aces", "2026-02-01", "ACA Grand Nationals", 3, 95.2583],
+  ["L3JM", "Spirit of Texas Purple Aces", "2026-02-15", "CHEERSPORT Nationals", 5, 95.975],
+  ["L3JM", "Spirit of Texas Purple Aces", "2026-03-01", "NCA All-Star Nationals", 8, 96.6166],
+  ["L3JM", "Cheer Sport Sharks - New England JAWS", "2026-02-01", "Athletic Championships Grand Nationals", 2, 95.25],
+  ["L3JM", "Woodlands Elite - Katy Spartans", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 3, 94.4083],
+  ["L3JM", "Woodlands Elite - Katy Spartans", "2026-03-01", "NCA All-Star Nationals", 5, 97.5],
+  ["L3JM", "Woodlands Elite - Katy Spartans", "2026-03-29", "One Up Grand Nationals", 5, 96.8167],
+  ["L3JM", "Spirit Xtreme En3rgy", "2025-12-07", "Spirit Celebration Christmas Grand Nationals", 1, 94.575],
+  ["L3JM", "Spirit Xtreme En3rgy", "2026-02-15", "CHEERSPORT Nationals", 7, 95.4791],
+  ["L3JM", "FAME All Stars - Yorktown Inspire", "2026-02-22", "COA Grand Nationals", 1, 95.2208],
+  ["L3JM", "FAME All Stars - Yorktown Inspire", "2026-03-22", "CANAM Grand Nationals", 2, 95.3],
+  ["L42SM", "Star Athletics Platinum", "2026-05-03", "The Summit", 5, 97.4667],
+  ["L2JS", "Star Athletics Storm", "2026-01-11", "Spirit Cheer Grand Nationals", 2, 96.3459],
+  ["L2JS", "Star Athletics Storm", "2026-02-15", "CHEERSPORT Nationals", 5, 95.55],
+  ["L2JS", "Star Athletics Storm", "2026-02-22", "Coastal at the Capitol", 3, 97.3],
+  ["L2JS", "Star Athletics Storm", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 1, 97.4458],
+  ["L2JS", "Star Athletics Storm", "2026-03-22", "CANAM Grand Nationals", 5, 94.5125],
+  ["L1JS", "Star Athletics Chrome", "2026-01-11", "Spirit Cheer Grand Nationals", 2, 95.144],
+  ["L1JS", "Star Athletics Chrome", "2026-02-15", "CHEERSPORT Nationals", 6, 96.3587],
+  ["L1JS", "Star Athletics Chrome", "2026-02-22", "Coastal at the Capitol", 3, 97.1921],
+  ["L1JS", "Star Athletics Chrome", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 2, 96.4674],
+  ["L1JS", "Star Athletics Chrome", "2026-03-22", "CANAM Grand Nationals", 2, 97.1015],
+  ["L3YS", "Star Athletics Spark", "2026-01-11", "Spirit Cheer Grand Nationals", 1, 96.075],
+  ["L3YS", "Star Athletics Spark", "2026-02-15", "CHEERSPORT Nationals", 1, 97.3834],
+  ["L3YS", "Star Athletics Spark", "2026-02-22", "Coastal at the Capitol", 2, 92.7708],
+  ["L3YS", "Star Athletics Spark", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 1, 97.35],
+  ["L3YS", "Star Athletics Spark", "2026-03-22", "CANAM Grand Nationals", 1, 95.8208],
+  ["L3YS", "Star Athletics Spark", "2026-04-24", "The Youth Summit", 3, 96.6667],
+  ["L2YS", "Star Athletics Glow", "2026-01-11", "Spirit Cheer Grand Nationals", 2, 96.8],
+  ["L2YS", "Star Athletics Glow", "2026-02-15", "CHEERSPORT Nationals", 1, 96.5708],
+  ["L2YS", "Star Athletics Glow", "2026-02-22", "Coastal at the Capitol", 2, 95.2792],
+  ["L2YS", "Star Athletics Glow", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 1, 97.0],
+  ["L2YS", "Star Athletics Glow", "2026-03-22", "CANAM Grand Nationals", 2, 95.3167],
+  ["L2YS", "Star Athletics Glow", "2026-04-24", "The Youth Summit", 13, 96.6667],
+  ["L1YM", "Star Athletics Youth Black", "2026-01-11", "Spirit Cheer Grand Nationals", 1, 96.7572],
+  ["L1YM", "Star Athletics Youth Black", "2026-02-15", "CHEERSPORT Nationals", 4, 95.942],
+  ["L1YM", "Star Athletics Youth Black", "2026-02-22", "Coastal at the Capitol", 2, 95.2111],
+  ["L1YM", "Star Athletics Youth Black", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 2, 96.4674],
+  ["L1YM", "Star Athletics Youth Black", "2026-03-22", "CANAM Grand Nationals", 2, 95.5254],
+  ["L1JS", "Star Athletics Chrome", "2026-05-03", "The Summit", 10, 96.5217],
+  ["L1MS", "Star Athletics Mini Elite Neon", "2026-01-11", "Spirit Cheer Grand Nationals", 1, 95.3361],
+  ["L1MS", "Star Athletics Mini Elite Neon", "2026-02-15", "CHEERSPORT Nationals", 1, 96.165],
+  ["L1MS", "Star Athletics Mini Elite Neon", "2026-02-22", "Coastal at the Capitol", 1, 96.9384],
+  ["L1MS", "Star Athletics Mini Elite Neon", "2026-03-08", "Mid-Atlantic Championships (Wildwood)", 1, 97.0834],
+  ["L1MS", "Star Athletics Mini Elite Neon", "2026-03-22", "CANAM Grand Nationals", 2, 95.6522]
+];
+LABELED.forEach(([d, t, date, comp, place, score]) => add(t, comp, S26, date, score, place, null, DIVS[d]));
+// Atomic Kitten: no published season found, so earlier scouting-sheet scores are used
+[92.233, 94.6667, 89.4458, 92.45].forEach(s => add("Showtime Elite Atlanta Atomic Kitten", EARLY, S26, "0000", s, null, null, DIVS.L5SS));
+
+/* ---- The Summit 2026 (May 3) ---- */
+const SUMMIT = "The Summit", SUMMIT_DATE = "2026-05-03";
+// [division, F=finals / S=semis / W=wild card, place or round rank, team, score, earlier round (finals only)]
+const SUMMIT_ROWS = [
+  ["L5SS", "F", 1, "Dakota Spirit Apollo", 99.0667, "Semis"],
+  ["L5SS", "F", 2, "SCV All Stars Senior Steel", 98.5333, "Semis"],
+  ["L5SS", "F", 3, "ACX MISS M5OW", 98.1333, "Semis"],
+  ["L5SS", "F", 4, "ACE Cheer Company Phoenix", 97.8667, "Semis"],
+  ["L5SS", "F", 5, "ATA Lake Norman Vortex", 97.7333, "Semis"],
+  ["L5SS", "F", 6, "Pack Athletics SPICE", 96.9333, "Semis"],
+  ["L5SS", "F", 7, "ICE Lunar Ladies", 96.7333, "Wild Card"],
+  ["L5SS", "F", 8, "Top Gun All Stars Rogue", 96.6, "Semis"],
+  ["L5SS", "F", 9, "Louisiana Cheer Force Neon", 96.4833, "Semis"],
+  ["L5SS", "F", 10, "Spirit Xtreme Lady X", 96.3333, "Wild Card"],
+  ["L5SS", "F", 11, "Champion Cheer Lady Light", 96.0, "Semis"],
+  ["L5SS", "F", 12, "Infinity Allstars Lady Legends", 95.8667, "Wild Card"],
+  ["L5SS", "F", 13, "The Cheer Pitt KC Golden Girls", 95.6833, "Semis"],
+  ["L5SS", "F", 14, "Woodlands Elite - Humble Commanders", 95.0167, "Wild Card"],
+  ["L5SS", "F", 15, "KC Cheer FRESH", 94.9167, "Wild Card"],
+  ["L5SS", "S", 1, "Dakota Spirit Apollo", 98.7333],
+  ["L5SS", "S", 3, "SCV All Stars Senior Steel", 97.8],
+  ["L5SS", "S", 5, "ACX MISS M5OW", 97.4333],
+  ["L5SS", "S", 4, "ACE Cheer Company Phoenix", 97.4667],
+  ["L5SS", "S", 2, "ATA Lake Norman Vortex", 98.3333],
+  ["L5SS", "S", 6, "Pack Athletics SPICE", 97.1333],
+  ["L5SS", "W", 3, "ICE Lunar Ladies", 95.5333],
+  ["L5SS", "S", 8, "Top Gun All Stars Rogue", 97.0],
+  ["L5SS", "S", 7, "Louisiana Cheer Force Neon", 97.0667],
+  ["L5SS", "W", 1, "Spirit Xtreme Lady X", 96.1333],
+  ["L5SS", "S", 10, "Champion Cheer Lady Light", 96.6],
+  ["L5SS", "W", 2, "Infinity Allstars Lady Legends", 95.9333],
+  ["L5SS", "S", 9, "The Cheer Pitt KC Golden Girls", 96.9333],
+  ["L5SS", "W", 5, "Woodlands Elite - Humble Commanders", 94.8833],
+  ["L5SS", "W", 4, "KC Cheer FRESH", 95.2833],
+  ["L5SS", "S", 11, "Ultimate Athletics LEGACY", 95.95],
+  ["L5SS", "S", 12, "NFINITE All Stars Lady Bullets", 95.9167],
+  ["L5SS", "S", 13, "Star Athletics Phoenix", 95.8],
+  ["L5SS", "S", 14, "Natural Venom All Stars G.I. Janes", 95.6833],
+  ["L5SS", "S", 15, "Cheer Athletics - Columbus ZeusCats", 95.05],
+  ["L5SS", "S", 16, "Woodlands Elite - Katy Shell Shock", 94.7167],
+  ["L5SS", "S", 17, "OC All Stars Smoke", 94.5833],
+  ["L5SS", "S", 18, "Spirit Central Bengals", 94.4667],
+  ["L5SS", "S", 19, "Steele Athletics - Northern CO Smoke", 94.2167],
+  ["L5SS", "S", 20, "Elite Cheer Odyssey", 93.95],
+  ["L5SS", "S", 21, "ATA Bla5t", 93.7333],
+  ["L5SS", "S", 22, "Cheer Athletics Omaha Lady Dynasty", 93.4833],
+  ["L5SS", "S", 23, "Stars Vipers Katy Cobra Kai", 93.3833],
+  ["L5SS", "S", 24, "Connect Cheer Northwest Blush", 93.15],
+  ["L5SS", "W", 6, "Cheer Extreme Kernersville Bombshells", 94.7333],
+  ["L5SS", "W", 7, "Cheer Athletics - Lexington Pharoah Cats", 92.8],
+  ["L5SS", "W", 8, "Showtime Elite Atlanta Atomic Kitten", 92.4667],
+  ["L5SS", "W", 9, "Cheer Force Arkansas Charm", 92.4167],
+  ["L5SS", "W", 10, "Cheer Extreme - Raleigh Medu5a", 92.0333],
+  ["L5SS", "W", 11, "The Stingray Allstars Lady Luck", 92.0],
+  ["L5SS", "W", 12, "ICE Weather Girls", 91.9333],
+  ["L5SS", "W", 13, "Cheer Extreme Odenton Rays", 85.1],
+  ["L4SM", "F", 1, "The Stingray Allstars Sugar", 98.4, "Semis"],
+  ["L4SM", "F", 2, "Spirit of Texas Royal Divas", 98.3333, "Semis"],
+  ["L4SM", "F", 3, "ATA Lake Norman Matrix", 98.0667, "Semis"],
+  ["L4SM", "F", 4, "FAME All Stars - Midlo Lady Crush", 97.8, "Wild Card"],
+  ["L4SM", "F", 5, "Cheer Athletics - Plano Sassycats", 97.7667, "Semis"],
+  ["L4SM", "F", 6, "USA Wildcats C4", 96.8667, "Wild Card"],
+  ["L4SM", "F", 7, "Star Athletics Onyx", 96.3, "Semis"],
+  ["L4SM", "F", 8, "ICE Storm", 96.2667, "Wild Card"],
+  ["L4SM", "F", 9, "Top Gun All Stars 24k", 95.9833, "Semis"],
+  ["L4SM", "F", 10, "All-Star Revolution Victory", 95.3333, "Wild Card"],
+  ["L4SM", "F", 11, "Memphis Pride Cheer BlackSmack", 94.8333, "Wild Card"],
+  ["L4SM", "S", 1, "Spirit of Texas Royal Divas", 97.4],
+  ["L4SM", "S", 2, "ATA Lake Norman Matrix", 97.0667],
+  ["L4SM", "S", 3, "Cheer Athletics - Plano Sassycats", 96.9333],
+  ["L4SM", "S", 4, "The Stingray Allstars Sugar", 96.75],
+  ["L4SM", "S", 5, "Star Athletics Onyx", 96.7333],
+  ["L4SM", "S", 6, "Top Gun All Stars 24k", 95.7167],
+  ["L4SM", "S", 7, "Premier Athletics - Knoxville West Great White Sharks", 95.4],
+  ["L4SM", "S", 8, "Connect Cheer Northwest Steel", 95.35],
+  ["L4SM", "S", 9, "Oregon Dream Teams Vanity", 94.9167],
+  ["L4SM", "S", 10, "The California All Stars - Livermore Swagg", 93.8],
+  ["L4SM", "S", 11, "World Elite Legacy", 84.6167],
+  ["L4SM", "W", 1, "FAME All Stars - Midlo Lady Crush", 97.4667],
+  ["L4SM", "W", 2, "All-Star Revolution Victory", 96.3167],
+  ["L4SM", "W", 3, "USA Wildcats C4", 95.6167],
+  ["L4SM", "W", 4, "Memphis Pride Cheer BlackSmack", 95.3],
+  ["L4SM", "W", 5, "ICE Storm", 94.7333],
+  ["L4SM", "W", 6, "Premier Athletics Columbia WOLFPAC- ONYX", 94.3333],
+  ["L4SM", "W", 7, "GymTyme All-Stars Diamonds", 94.1167],
+  ["L4SM", "W", 8, "ICE Phoenix", 94.05],
+  ["L4SM", "W", 9, "FAME All Stars - Roanoke First Class", 92.6],
+  ["L4SM", "W", 10, "ACE Cheer Company Sharp Shooters", 91.8167],
+  ["L4SM", "W", 11, "Cheer Athletics - Chicago Lady Blaze", 86.7667],
+  ["L4SM", "W", 12, "FAME All Stars - VA Beach GLAM", 85.8667],
+  ["L4JS", "F", 1, "Rival Athletics Revenge", 98.5333, "Wild Card"],
+  ["L4JS", "F", 2, "Nor Cal Elite All Stars Aurora", 98.2667, "Semis"],
+  ["L4JS", "F", 3, "CheerForce Simi Valley Fab Fangz", 98.1333, "Wild Card"],
+  ["L4JS", "F", 4, "Pittsburgh Pride All Stars Junior Reign", 97.4667, "Wild Card"],
+  ["L4JS", "F", 5, "Dakota Spirit Enfuego", 97.3833, "Semis"],
+  ["L4JS", "F", 6, "ACE Cheer Company Braves", 97.2667, "Semis"],
+  ["L4JS", "F", 7, "Maryland Twisters Smoke", 96.9333, "Wild Card"],
+  ["L4JS", "F", 8, "Phoenix Elite Fever", 96.4667, "Wild Card"],
+  ["L4JS", "F", 9, "Twist & Shout Norman Bliss", 96.0, "Semis"],
+  ["L4JS", "F", 10, "Cheer Athletics - Frisco G-4ce Jags", 94.3333, "Semis"],
+  ["L4JS", "S", 1, "Nor Cal Elite All Stars Aurora", 97.3333],
+  ["L4JS", "S", 2, "ACE Cheer Company Braves", 96.4833],
+  ["L4JS", "S", 3, "Dakota Spirit Enfuego", 96.3833],
+  ["L4JS", "S", 4, "Cheer Athletics - Frisco G-4ce Jags", 96.2667],
+  ["L4JS", "S", 5, "Twist & Shout Norman Bliss", 96.0],
+  ["L4JS", "S", 6, "Star Athletics ATL Crush", 95.5833],
+  ["L4JS", "S", 7, "New Jersey Spirit Explosion JFAB", 95.5333],
+  ["L4JS", "S", 8, "GU Shamrocks 4 Leaf Clovers", 94.2667],
+  ["L4JS", "W", 1, "Rival Athletics Revenge", 97.9667],
+  ["L4JS", "W", 2, "CheerForce Simi Valley Fab Fangz", 97.8],
+  ["L4JS", "W", 3, "Pittsburgh Pride All Stars Junior Reign", 97.0667],
+  ["L4JS", "W", 4, "Phoenix Elite Fever", 96.9333],
+  ["L4JS", "W", 5, "Maryland Twisters Smoke", 96.8667],
+  ["L4JS", "W", 6, "Charlotte Allstar Cheerleading Steel", 96.1333],
+  ["L4JS", "W", 7, "Long Island Cheer Prodigy", 95.85],
+  ["L4JS", "W", 8, "Upper Merion All Stars Ice", 94.7333],
+  ["L4JS", "W", 9, "Cheer Athletics - Dallas Junior Couture", 94.2],
+  ["L4JS", "W", 10, "Platinum Athletics PAC Dynasty", 93.6167],
+  ["L4JS", "W", 11, "Formula Cheer Nightmares", 93.5667],
+  ["L4JS", "W", 12, "Inspire Athletics Obsession", 91.8833],
+  ["L42SCM", "F", 1, "Cheer Extreme - Raleigh LV", 99.0, "Semis"],
+  ["L42SCM", "F", 2, "The California All Stars - Ontario Electric", 98.0, "Semis"],
+  ["L42SCM", "F", 3, "Cheer Extreme Kernersville Spotlight", 97.9333, "Semis"],
+  ["L42SCM", "F", 4, "ATA Oxygen", 97.3333, "Semis"],
+  ["L42SCM", "F", 5, "Spirit Xtreme Passion", 97.0, "Wild Card"],
+  ["L42SCM", "F", 6, "Woodlands Elite - Humble Blue Angels", 96.4, "Semis"],
+  ["L42SCM", "F", 7, "Phoenix Elite Blush", 93.7333, "Wild Card"],
+  ["L42SCM", "F", 8, "The Stingray Allstars Chill", 93.5333, "Wild Card"],
+  ["L42SCM", "F", 9, "Cheer Extreme DMV All In!", 92.8, "Wild Card"],
+  ["L42SCM", "S", 1, "Cheer Extreme - Raleigh LV", 99.2],
+  ["L42SCM", "S", 2, "Cheer Extreme Kernersville Spotlight", 98.2],
+  ["L42SCM", "S", 3, "ATA Oxygen", 96.8667],
+  ["L42SCM", "S", 4, "The California All Stars - Ontario Electric", 96.4833],
+  ["L42SCM", "S", 5, "Woodlands Elite - Humble Blue Angels", 96.1333],
+  ["L42SCM", "S", 6, "Top Gun All Stars Saviors", 96.0667],
+  ["L42SCM", "S", 7, "The California All Stars - Tucson Legends", 95.95],
+  ["L42SCM", "S", 8, "Cheer Athletics - Denver Winter Soldiers", 95.7667],
+  ["L42SCM", "W", 1, "Spirit Xtreme Passion", 97.5333],
+  ["L42SCM", "W", 2, "The Stingray Allstars Chill", 95.1333],
+  ["L42SCM", "W", 3, "Cheer Extreme DMV All In!", 93.8167],
+  ["L42SCM", "W", 4, "Phoenix Elite Blush", 93.3833],
+  ["L3JM", "F", 1, "Louisiana Cheer Force Pink", 98.3333, "Semis"],
+  ["L3JM", "F", 2, "Central Jersey All Stars Bombsquad", 97.8, "Semis"],
+  ["L3JM", "F", 3, "The California All Stars - Livermore J Fab", 97.6, "Semis"],
+  ["L3JM", "F", 4, "Star Athletics Gold", 97.5333, "Semis"],
+  ["L3JM", "F", 4, "All-Star Revolution Liberty", 97.5333, "Semis"],
+  ["L3JM", "F", 6, "Top Gun All Stars Rubies", 96.6833, "Semis"],
+  ["L3JM", "F", 7, "East Celebrity Elite - Hingham JEMS", 96.2, "Wild Card"],
+  ["L3JM", "F", 8, "Upper Merion All Stars Frost", 96.0, "Wild Card"],
+  ["L3JM", "F", 9, "Stars Vipers V3nom", 95.2833, "Semis"],
+  ["L3JM", "F", 10, "FAME All Stars - Roanoke Platinum", 95.15, "Wild Card"],
+  ["L3JM", "F", 11, "East Celebrity Elite Wonder Girls", 94.75, "Semis"],
+  ["L3JM", "F", 12, "The Stingray Allstars Titan", 94.2, "Wild Card"],
+  ["L3JM", "F", 13, "Spirit Athletics Junior Jags", 92.8, "Wild Card"],
+  ["L3JM", "S", 1, "Louisiana Cheer Force Pink", 97.8],
+  ["L3JM", "S", 2, "All-Star Revolution Liberty", 97.4667],
+  ["L3JM", "S", 3, "East Celebrity Elite Wonder Girls", 97.2667],
+  ["L3JM", "S", 4, "Stars Vipers V3nom", 97.1333],
+  ["L3JM", "S", 5, "The California All Stars - Livermore J Fab", 97.0667],
+  ["L3JM", "S", 6, "Star Athletics Gold", 96.9333],
+  ["L3JM", "S", 7, "Central Jersey All Stars Bombsquad", 96.8667],
+  ["L3JM", "S", 7, "Top Gun All Stars Rubies", 96.8667],
+  ["L3JM", "S", 9, "Spirit of Texas Purple Aces", 96.7333],
+  ["L3JM", "S", 10, "Cheer Sport Sharks - New England JAWS", 95.7333],
+  ["L3JM", "S", 11, "Woodlands Elite - Katy Spartans", 95.1333],
+  ["L3JM", "S", 12, "Spirit Xtreme En3rgy", 95.0667],
+  ["L3JM", "S", 13, "FAME All Stars - Yorktown Inspire", 92.8667],
+  ["L3JM", "W", 1, "The Stingray Allstars Titan", 95.4833],
+  ["L3JM", "W", 2, "East Celebrity Elite - Hingham JEMS", 94.8167],
+  ["L3JM", "W", 3, "Upper Merion All Stars Frost", 94.7],
+  ["L3JM", "W", 4, "FAME All Stars - Roanoke Platinum", 94.1833],
+  ["L3JM", "W", 5, "Spirit Athletics Junior Jags", 93.2667]
+];
+const SUMMIT_DIVS = ["L5SS", "L4SM", "L4JS", "L42SCM", "L3JM"];
+const summitEntries = {};
+SUMMIT_DIVS.forEach(d => {
+  summitEntries[d] = [];
+  const rows = SUMMIT_ROWS.filter(r => r[0] === d);
+  const fin = rows.filter(r => r[1] === "F"), finTeams = new Set(fin.map(r => r[3]));
+  const semis = rows.filter(r => r[1] === "S"), wc = rows.filter(r => r[1] === "W");
+  fin.forEach(([, , p, t, f, er]) => {
+    const early = (er === "Semis" ? semis : wc).find(r => r[3] === t);
+    if (early) add(t, SUMMIT, S26, SUMMIT_DATE, early[4], null, er, DIVS[d]);
+    add(t, SUMMIT, S26, SUMMIT_DATE, f, p, "Finals", DIVS[d]);
+    summitEntries[d].push({ team: t, place: p, score: f, finish: ordinal(p) + " (Finals)" });
+  });
+  let next = fin.length + 1;
+  semis.filter(r => !finTeams.has(r[3])).forEach(([, , rk, t, s]) => { add(t, SUMMIT, S26, SUMMIT_DATE, s, null, "Semis", DIVS[d]); summitEntries[d].push({ team: t, place: next++, score: s, finish: "Out in Semis (" + ordinal(rk) + ")" }); });
+  wc.filter(r => !finTeams.has(r[3])).forEach(([, , rk, t, s]) => { add(t, SUMMIT, S26, SUMMIT_DATE, s, null, "Wild Card", DIVS[d]); summitEntries[d].push({ team: t, place: next++, score: s, finish: "Out in Wild Card (" + ordinal(rk) + ")" }); });
+});
+
+/* ---- 2026–27 season: what we know so far ---- */
+// [division, team, date, competition, place, score]
+const LABELED27 = [
+  ["L5SS", "Spirit Xtreme Lady X", "2026-11-14", "Aloha North Texas Showdown", 2, 94.4]
+];
+LABELED27.forEach(([d, t, date, comp, place, score]) => add(t, comp, S27, date, score, place, null, DIVS[d]));
+// renamed / merged teams: new name -> last season's name (their history carries over)
+const FORMERLY = { "NFINITE All Stars Code Black": "NFINITE All Stars Lady Bullets" };
+Object.keys(FORMERLY).forEach(t => { TEAMS[t] = TEAMS[t] || { results: [] }; });
+OUR.forEach(o => { TEAMS[o.team] = TEAMS[o.team] || { results: [] }; });
+const ROSTER27 = [
+  { div: "L5 Senior Small", team: "Star Athletics Phoenix", status: "in", note: "First competition: Spirit Cheer, Jan 9–10." },
+  { div: "L5 Senior Small", team: "NFINITE All Stars Code Black", status: "in", note: "NFINITE combined two of last season's teams. Code Black is their L5 Senior Small team now; Lady Bullets' history is shown with it." },
+  { div: "L5 Senior Small", team: "Spirit Xtreme Lady X", status: "in", note: "Already competing: 2nd with 94.40 at Aloha North Texas Showdown (Nov 14)." },
+  { div: "L5 Senior Small", team: "Louisiana Cheer Force Neon", status: "out", note: "Listed in L5 Senior - Evaluation this season." },
+  { div: "L4 Senior Medium", team: "Star Athletics Onyx", status: "in", note: "7th at the Summit last season. First competition: Spirit Cheer, Jan 9–10." },
+  { div: "L4 Junior Small", team: "Star Athletics Aura", status: "in", note: "Brand-new team this season, so there are no scores yet. Rivals' history is below." },
+  { div: "L4.2 Senior Coed Medium", team: "Star Athletics Platinum", status: "in", note: "Moved from L4.2 Senior Medium (all-girl) to coed this season. Last year: 5th at the Summit, and won Coastal and Wildwood." },
+  { div: "L3 Junior Medium", team: "Star Athletics Gold", status: "in", note: "Last season: won Cheersport, Coastal, Wildwood and CANAM, and tied for 4th at the Summit." },
+  { div: "L2 Junior Flex Small", team: "Star Athletics Storm", status: "in", note: "Moved to the Flex division this season (last year L2 Junior Small: won Wildwood, 3rd at Coastal)." },
+  { div: "L1 Junior Small", team: "Star Athletics Chrome", status: "in", note: "Same division as last season: 10th at the Summit, 2nd at CANAM and Wildwood." },
+  { div: "L3 Youth Flex Small", team: "Star Athletics Spark", status: "in", note: "Moved to the Flex division this season (last year L3 Youth Small: won Spirit Cheer, Cheersport, Wildwood and CANAM; 3rd at the Youth Summit)." },
+  { div: "L2 Youth Small", team: "Star Athletics Glow", status: "in", note: "Same division as last season: won Cheersport and Wildwood; 13th at the Youth Summit." },
+  { div: "L1 Youth Medium", team: "Star Athletics Youth Black", status: "in", note: "Same division as last season: won Spirit Cheer, 2nd at Coastal, Wildwood and CANAM." },
+  { div: "L1 Mini Small", team: "Star Athletics Mini Elite Neon", status: "in", note: "Some results sites list it as just \"Neon.\" Last season: won Spirit Cheer, Cheersport, Coastal and Wildwood, and was 2nd at CANAM." }
+];
+
+/* ---- 2024–25 L4 / L4.2 Senior: NCA 2025 scouting sheet ---- */
+[
+  ["The Stingray Allstars Sugar", [97.1958, 97.7916, 97.7125]], ["Star Athletics Swoosh", [98.4, 96.4]],
+  ["East Celebrity Elite Bomb Girls", [96.7208, 96.8666]], ["Infinity All Stars Lady Legends (L4)", [95.7, 96.65]],
+  ["Spirit of Texas Royal Divas", [97.6, 95.925, 94.5834]], ["Star Athletics Onyx", [94.625, 97.433]],
+  ["Premier Athletics Tiger Sharks", [94.85, 95.0333]], ["The Stingray Allstars Raptors", [90.7, 95.933, 96.2417]],
+  ["Woodlands Elite - Katy Lady Ops", [90.5792, 94.225, 94.5625, 96.8292]], ["California Pride Drought", [97.4667, 98.6667]],
+  ["Cheer Athletics - Plano Sassycats", [97.8083, 96.2875, 98.5333]], ["All-Star Revolution Victory", [92.8, 97.05, 97.2667, 97.05, 97.2833]],
+  ["The California All Stars - Livermore Swagg", [94.5417, 97.15, 95.6208]], ["CheerForce San Diego Wrath", [94.79, 93.8333]],
+  ["The Stingray Allstars UV", [97.3333, 97.9875, 98.5834]], ["Star Athletics Platinum", [95.15, 97.45]],
+  ["East Celebrity Elite Rebels", [94.7958, 97.6375]], ["Top Gun All Stars Bombshells", [96]],
+  ["Cheer Athletics - Philadelphia City Girls", [95.3458, 94.7375]], ["ATA Lake Norman Voltage", [92.5083, 94.7375, 95.4375, 96.9583]],
+  ["Spirit Xtreme Passion", [93.6084, 94.1833]], ["Cheer Athletics - Plano Savagecats", [92.9709, 93.3667]],
+  ["California Pride Snowstorm", [97.8667, 96.6167]], ["Cheer Extreme - Raleigh Lady Venom", [96.25, 95.8333, 96.0042, 96.2333]],
+  ["Cheer Athletics - Charlotte CrownCats", [96.0667]]
+].forEach(([t, arr]) => arr.forEach(s => add(t, EARLY, S25, "0000", s, null, null, "L4 / L4.2 Senior")));
+[["The Stingray Allstars UV", 98.0333, 1], ["Star Athletics Platinum", 95.7417, 5], ["East Celebrity Elite Rebels", 96.1208, 4],
+ ["Spirit Xtreme Passion", 96.2667, 3], ["Cheer Athletics - Plano Savagecats", 94.2583, 8]]
+  .forEach(([t, s, p]) => add(t, "CHEERSPORT Nationals", S25, "2025-02-16", s, p, null, "L4.2 Senior"));
+TEAMS["Top Gun All Stars Scratch"] = { results: [] };
+
+/* ---- Events for Comp Preview ---- */
+const EVENTS = [
+  { id: "summit26-l5ss", comp: SUMMIT, season: S26, date: SUMMIT_DATE, division: DIVS.L5SS, entries: summitEntries.L5SS },
+  { id: "summit26-l4sm", comp: SUMMIT, season: S26, date: SUMMIT_DATE, division: DIVS.L4SM, entries: summitEntries.L4SM },
+  { id: "summit26-l4js", comp: SUMMIT, season: S26, date: SUMMIT_DATE, division: DIVS.L4JS, entries: summitEntries.L4JS },
+  { id: "summit26-l42scm", comp: SUMMIT, season: S26, date: SUMMIT_DATE, division: DIVS.L42SCM, entries: summitEntries.L42SCM },
+  { id: "summit26-l3jm", comp: SUMMIT, season: S26, date: SUMMIT_DATE, division: DIVS.L3JM, entries: summitEntries.L3JM },
+  { id: "cs25-l42", comp: "CHEERSPORT Nationals", season: S25, date: "2025-02-16", division: "L4.2 Senior",
+    entries: ["The Stingray Allstars UV", "Star Athletics Platinum", "East Celebrity Elite Rebels", "Top Gun All Stars Bombshells",
+      "Cheer Athletics - Philadelphia City Girls", "ATA Lake Norman Voltage", "Spirit Xtreme Passion", "Cheer Athletics - Plano Savagecats"]
+      .map(t => { const r = (TEAMS[t].results.find(x => x.date === "2025-02-16") || {}); return { team: t, place: r.place, score: r.score, finish: r.place ? ordinal(r.place) : null }; }) },
+  { id: "nca25-l42", comp: "NCA All-Star Nationals", season: S25, date: "2025-03-02", division: "L4.2 Senior",
+    entries: ["The Stingray Allstars UV", "California Pride Snowstorm", "East Celebrity Elite Rebels", "Star Athletics Platinum",
+      "Cheer Extreme - Raleigh Lady Venom", "Cheer Athletics - Charlotte CrownCats", "Spirit Xtreme Passion", "Cheer Athletics - Plano Savagecats"].map(t => ({ team: t })) },
+  { id: "cs25-l4", comp: "CHEERSPORT Nationals", season: S25, date: "2025-02-16", division: "L4 Senior",
+    entries: ["The Stingray Allstars Sugar", "Star Athletics Swoosh", "East Celebrity Elite Bomb Girls", "Infinity All Stars Lady Legends (L4)",
+      "Spirit of Texas Royal Divas", "Star Athletics Onyx", "Premier Athletics Tiger Sharks", "The Stingray Allstars Raptors",
+      "Woodlands Elite - Katy Lady Ops", "Top Gun All Stars Scratch"].map(t => ({ team: t })) },
+  { id: "nca25-l4", comp: "NCA All-Star Nationals", season: S25, date: "2025-03-02", division: "L4 Senior",
+    entries: ["California Pride Drought", "The Stingray Allstars Sugar", "Cheer Athletics - Plano Sassycats", "All-Star Revolution Victory",
+      "Spirit of Texas Royal Divas", "Star Athletics Onyx", "The California All Stars - Livermore Swagg", "CheerForce San Diego Wrath",
+      "Woodlands Elite - Katy Lady Ops"].map(t => ({ team: t })) }
+];
+
+/* ---- 2026–27 competition schedule (same weekends for all three teams) ---- */
+const SCHEDULE = [
+  { name: "Spirit Cheer", city: "Atlantic City, NJ", start: "2027-01-09", end: "2027-01-10", last: "Spirit Cheer Grand Nationals" },
+  { name: "Spirit Unlimited", city: "Atlantic City, NJ", start: "2027-01-23", end: "2027-01-24", last: "Spirit Unlimited Battle at the Boardwalk" },
+  { name: "CHEERSPORT Nationals", city: "Atlanta, GA", start: "2027-02-11", end: "2027-02-15", last: "CHEERSPORT Nationals" },
+  { name: "Coastal at the Capitol", city: "Washington, DC", start: "2027-02-19", end: "2027-02-21", last: "Coastal at the Capitol" },
+  { name: "Wildwood National Championship", city: "Wildwood, NJ", start: "2027-03-06", end: "2027-03-07", last: "Mid-Atlantic Championships (Wildwood)" },
+  { name: "NCA All-Star Nationals", city: "Houston, TX", start: "2027-03-18", end: "2027-03-22", last: "NCA All-Star Nationals" }
+];
+
+/* ---- End-of-season championships (need a bid) ---- */
+const EOS = {
+  summit: { name: "The Summit", city: "Orlando, FL (ESPN Wide World of Sports)", start: "2027-04-29", end: "2027-05-02", lastName: "The Summit", last: "Apr 30–May 3, 2026" },
+  youth: { name: "The Youth Summit", city: "Tampa, FL", start: null, month: "Apr", lastName: "The Youth Summit", last: "Apr 23–24, 2026" },
+  neregional: { name: "The Northeast Regional Summit", city: "Baltimore, MD (last year's site)", start: null, month: "Apr", lastName: "The Northeast Regional Summit", last: "Apr 11–12, 2026" }
+};
+
+/* ======================= HELPERS ======================= */
+function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+const $ = s => document.querySelector(s);
+const fmt = n => (n == null || isNaN(n)) ? "—" : n.toFixed(2);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function stats(scores) {
+  if (!scores.length) return { n: 0, avg: null, best: null, low: null, spread: null };
+  const best = Math.max(...scores), low = Math.min(...scores);
+  return { n: scores.length, avg: scores.reduce((a, b) => a + b, 0) / scores.length, best, low, spread: best - low };
+}
+const ownResults = t => (TEAMS[t] ? TEAMS[t].results : []);
+const results = t => {
+  const own = ownResults(t), prev = FORMERLY[t];
+  return prev ? own.concat(ownResults(prev).map(r => ({ ...r, comp: r.comp + " (as " + prev.replace(/^NFINITE All Stars /, "") + ")" }))) : own;
+};
+let RANK_MODE = "all";
+const before = (t, ev) => results(t).filter(r => r.season === ev.season && r.date < ev.date).sort((a, b) => a.date.localeCompare(b.date));
+const scoresBefore = (t, ev) => { const rs = before(t, ev); return (RANK_MODE === "recent" && rs.length > 3 ? rs.slice(-3) : rs).map(r => r.score); };
+const allScores = t => results(t).map(r => r.score);
+const SEASONS = [S27, S26, S25];
+let TEAM_SEASON = "all", CMP_SEASON = "all", SEL_SEASON = S26, SEL_STAND = null;
+const inSeason = (r, se) => se === "all" || r.season === se;
+const seasonScores = (t, se) => results(t).filter(r => inSeason(r, se)).map(r => r.score);
+const evLabel = ev => ev.season + " · " + ev.comp + " · " + ev.division;
+const resLabel = r => (r.comp === EARLY ? "Earlier comp" : r.comp) + (r.round && r.round !== "Finals" ? " " + r.round : "") + (r.place ? " · " + ordinal(r.place) : "");
+const isOurs = t => OUR_NAMES.has(t);
+
+/* ======================= OUR TEAMS TAB ======================= */
+function lastFieldFor(c, div) {
+  const f = [];
+  Object.keys(TEAMS).forEach(t => ownResults(t).forEach(r => { if (r.season === S26 && r.comp === c.last && r.div === div) f.push([t, r.place, r.score]); }));
+  return f.sort((a, b) => (a[1] ?? 99) - (b[1] ?? 99) || b[2] - a[2]);
+}
+function otherDivNote(c, o, quietIfNone) {
+  const r = ownResults(o.team).find(x => x.season === S26 && x.comp === c.last);
+  const short = esc(o.team.replace("Star Athletics ", ""));
+  if (r) return `<p class="hint" style="margin:6px 0 0">${short} competed here last season in ${esc(r.div)}: ${r.place ? ordinal(r.place) + ", " : ""}${fmt(r.score)}.</p>`;
+  return quietIfNone ? "" : `<p class="hint" style="margin:6px 0 0">${short} didn't compete here last season.</p>`;
+}
+function renderSwitch() {
+  $("#ourSwitch").innerHTML = OUR.map(o => `<button type="button" data-our="${o.key}" aria-pressed="${o.key === CURRENT.key}">${esc(o.team.replace("Star Athletics ", ""))}<small>${esc(o.div)}${o.isNew ? " · new" : ""}</small></button>`).join("");
+}
+function renderSeason() {
+  const o = CURRENT;
+  $("#seasonTitle").textContent = o.team + " · " + o.div;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = s => { const [y, m, dd] = s.split("-").map(Number); return new Date(y, m - 1, dd); };
+  const nextIdx = SCHEDULE.findIndex(c => d(c.end) >= today);
+  const next = SCHEDULE[nextIdx];
+  const days = next ? Math.round((d(next.start) - today) / 86400000) : null;
+  const ph = stats(ownResults(o.team).filter(r => r.season === S26).map(r => r.score));
+  const ev = EVENTS.find(e => e.comp === SUMMIT && e.division === o.div);
+  let summitRow = null;
+  Object.values(summitEntries).forEach(list => { const r = list.find(e => e.team === o.team); if (r) summitRow = r; });
+  if (!summitRow) { const r = ownResults(o.team).find(x => x.comp === EOS[o.eos].lastName && x.place); if (r) summitRow = { finish: ordinal(r.place) + " (Finals" + (r.div !== o.div ? ", " + r.div : "") + ")" }; }
+  $("#seasonHead").innerHTML = `
+    <div class="stat"><span>Next competition</span><b style="font-size:20px;line-height:1.2">${next ? esc(next.name) : "Season over"}</b></div>
+    <div class="stat"><span>Days to go</span><b>${days != null ? (days > 0 ? days : "This week") : "—"}</b></div>
+    ${o.isNew
+      ? `<div class="stat"><span>Last season</span><b style="font-size:20px;line-height:1.2">New team, no scores yet</b></div>
+         ${ev && ev.entries[0] ? `<div class="stat"><span>Division leader last season</span><b style="font-size:18px;line-height:1.2">${esc(ev.entries[0].team) + " · " + fmt(ev.entries[0].score)}</b></div>` : ""}`
+      : `<div class="stat"><span>Last season avg</span><b>${fmt(ph.avg)}</b></div>
+         <div class="stat"><span>Last season best</span><b>${fmt(ph.best)}</b></div>
+         ${o.eos === "neregional" ? `<div class="stat"><span>Season ends at</span><b style="font-size:18px;line-height:1.2">NE Regional Summit</b></div>` : `<div class="stat"><span>${o.eos === "youth" ? "2026 Youth Summit" : "2026 Summit"}</span><b style="font-size:20px;line-height:1.2">${summitRow ? esc(summitRow.finish) : "—"}</b></div>`}`}`;
+  const roster = ROSTER27.filter(x => x.div === o.div);
+  $("#roster27").innerHTML = `<h3>2026–27 ${esc(o.div)}: what we know so far</h3>
+    <ul style="margin:6px 0 0;padding-left:18px">${roster.map(x => `<li style="margin-bottom:6px">${x.status === "in" ? '<span class="pill good">In division</span>' : '<span class="pill warn">Moved</span>'}
+      <button class="team-link" data-team="${esc(x.team)}">${esc(x.team)}</button>: ${esc(x.note)}</li>`).join("")}</ul>
+    <p class="hint" style="margin:6px 0 0">Most teams haven't competed yet this season. This list grows as results and performance orders post.</p>`;
+  const mon = s => d(s).toLocaleString("en-US", { month: "short" });
+  $("#sched").innerHTML = SCHEDULE.map((c, i) => {
+    const s = d(c.start), e = d(c.end);
+    const range = s.getMonth() === e.getMonth() ? `${s.getDate()}–${e.getDate()}` : `${s.getDate()}–${mon(c.end)} ${e.getDate()}`;
+    const f = lastFieldFor(c, o.div);
+    const mine = f.find(x => x[0] === o.team);
+    const shown = f.slice(0, 8);
+    const split = new Set(f.map(x => x[1]).filter(Boolean)).size < f.filter(x => x[1]).length;
+    const block = f.length
+      ? `<p style="margin:8px 0 0;font-weight:700">Last season's ${esc(o.div)} results (${f.length} team${f.length === 1 ? "" : "s"} on file)</p>
+         <ul>${shown.map(([t, p, sc]) => `<li>${p ? ordinal(p) : "–"} · <button class="team-link" data-team="${esc(t)}">${esc(t)}</button> · ${fmt(sc)}${isOurs(t) ? ' <span class="pill accent">Ours</span>' : ""}</li>`).join("")}</ul>
+         ${f.length > shown.length ? `<p class="hint" style="margin:4px 0 0">+ ${f.length - shown.length} more. Tap a team for its full season.</p>` : ""}
+         ${split ? '<p class="hint" style="margin:4px 0 0">This event split the division into groups or combined sizes, so some places repeat.</p>' : ""}
+         ${mine || o.isNew ? "" : otherDivNote(c, o)}`
+      : `<p class="hint" style="margin:8px 0 0">No ${esc(o.div)} results on file from this event last season. The field gets added when the performance order posts.</p>${o.isNew ? "" : otherDivNote(c, o, true)}`;
+    return `<div class="comp ${i === nextIdx ? "next" : ""}">
+      <div class="date"><div class="m">${mon(c.start)}</div><div class="d">${range}</div><div class="c">2027</div></div>
+      <div>
+        <h3>${esc(c.name)}</h3>
+        <div style="color:var(--muted)">${esc(c.city)} ${i === nextIdx ? '<span class="status live">Next up</span>' : '<span class="status">Upcoming</span>'}</div>
+        ${block}
+      </div>
+    </div>`;
+  }).join("") + eosCard(o, d, mon);
+}
+function eosCard(o, d, mon) {
+  const e = EOS[o.eos]; if (!e) return "";
+  const last = ownResults(o.team).filter(r => r.season === S26 && r.comp === e.lastName);
+  const fin = last.find(r => r.place) || last[0];
+  const short = esc(o.team.replace("Star Athletics ", ""));
+  let range = "TBA", m = e.month || "";
+  if (e.start) { const s = d(e.start), en = d(e.end); m = mon(e.start); range = s.getMonth() === en.getMonth() ? `${s.getDate()}–${en.getDate()}` : `${s.getDate()}–${mon(e.end)} ${en.getDate()}`; }
+  const lastLine = fin
+    ? `${short} last season: ${fin.place ? ordinal(fin.place) + (fin.round && fin.round !== "Finals" ? " in " + fin.round : "") : (fin.round ? "out in " + fin.round : "competed")}${fin.score ? ", " + fmt(fin.score) : ""}.`
+    : (o.isNew ? "New team, so this would be its first trip." : `${short}'s result there last season isn't on file yet.`);
+  return `<div class="comp" style="border-left-color:var(--gold)">
+    <div class="date"><div class="m">${esc(m)}</div><div class="d">${range}</div><div class="c">2027</div></div>
+    <div>
+      <h3>${esc(e.name)}</h3>
+      <div style="color:var(--muted)">${esc(e.city)} <span class="status" style="background:var(--gold);color:var(--gold-ink)">End of season · bid needed</span></div>
+      <p class="hint" style="margin:8px 0 0">${e.start ? "" : "2027 dates not announced yet (last year: " + esc(e.last) + "). "}${lastLine}</p>
+    </div>
+  </div>`;
+}
+
+/* ======================= COMP PREVIEW ======================= */
+function renderPreview() {
+  const ev = EVENTS.find(e => e.id === $("#divSelect").value) || EVENTS[0];
+  const rows = ev.entries.map(e => ({ ...e, s: stats(scoresBefore(e.team, ev)) }));
+  const scored = rows.filter(x => x.s.avg != null).sort((a, b) => b.s.avg - a.s.avg);
+  const unscored = rows.filter(x => x.s.avg == null).sort((a, b) => (a.place ?? 999) - (b.place ?? 999));
+  scored.forEach((x, i) => x.pred = i + 1);
+  const hasResults = rows.some(x => x.place != null);
+  if (hasResults) [...scored].filter(x => x.place != null).sort((a, b) => a.place - b.place).forEach((x, i) => x.actualRel = i + 1);
+  const maxAvg = Math.max(...scored.map(x => x.s.avg), 0), minAvg = Math.min(...scored.map(x => x.s.avg), maxAvg);
+  const fieldBest = scored.length ? Math.max(...scored.map(x => x.s.best)) : null;
+  let within2 = 0, judged = 0;
+  scored.forEach(x => { if (x.actualRel) { judged++; if (Math.abs(x.actualRel - x.pred) <= 2) within2++; } });
+  const winner = rows.find(x => x.place === 1);
+  $("#previewSummary").innerHTML = `<div class="stats">
+    <div class="stat"><span>Teams in field</span><b>${rows.length}</b></div>
+    <div class="stat"><span>Scouted (scores on file)</span><b>${scored.length}</b></div>
+    <div class="stat"><span>Predicted favorite</span><b style="font-size:18px;line-height:1.2">${scored[0] ? esc(scored[0].team) : "—"}</b></div>
+    ${hasResults ? `<div class="stat"><span>Actual winner</span><b style="font-size:18px;line-height:1.2">${winner ? esc(winner.team) : "—"}</b></div>
+    <div class="stat"><span>Called within 2 spots</span><b>${judged ? within2 + " of " + judged : "—"}</b></div>` : ""}
+  </div>
+  ${hasResults && judged ? `<p class="hint">"Pred." ranks only the scouted teams. "Among scouted" shows where each one actually finished compared with the other scouted teams, so the two columns line up.</p>` : ""}`;
+  const cols = hasResults ? 8 : 6;
+  const head = `<thead><tr><th>Pred.</th><th>Team</th><th class="num">${RANK_MODE === "recent" ? "Recent avg" : "Season avg"}</th><th class="col-bar">Strength</th><th class="num">Best</th><th class="num">Scores</th>${hasResults ? '<th>Actual finish</th><th>Among scouted</th>' : ''}</tr></thead>`;
+  const rowHtml = x => {
+    const pct = x.s.avg != null ? (maxAvg > minAvg ? 15 + 85 * (x.s.avg - minAvg) / (maxAvg - minAvg) : 100) : 0;
+    let res = "";
+    if (hasResults) {
+      const fin = x.finish ? `${esc(x.finish)}<br><small style="color:var(--muted)">${fmt(x.score)}</small>` : '<span class="empty">—</span>';
+      let rel = '<span class="empty">—</span>';
+      if (x.actualRel) {
+        const diff = x.pred - x.actualRel;
+        rel = `${ordinal(x.actualRel)} ` + (diff > 0 ? `<span class="pill good">up ${diff}</span>` : diff < 0 ? `<span class="pill warn">down ${-diff}</span>` : `<span class="pill accent">as predicted</span>`);
+      }
+      res = `<td>${fin}</td><td>${rel}</td>`;
+    }
+    return `<tr class="${x.pred === 1 ? "top1" : ""} ${isOurs(x.team) ? "mine" : ""}">
+      <td class="rank">${x.pred ?? "–"}</td>
+      <td><button class="team-link" data-team="${esc(x.team)}">${esc(x.team)}</button></td>
+      <td class="num"><b>${fmt(x.s.avg)}</b></td>
+      <td class="col-bar"><div class="bar" aria-hidden="true"><i style="width:${pct}%"></i></div></td>
+      <td class="num">${x.s.best != null ? `<span class="${x.s.best === fieldBest ? "best" : ""}">${fmt(x.s.best)}</span>` : "—"}</td>
+      <td class="num">${x.s.n || "—"}</td>${res}</tr>`;
+  };
+  let body = scored.map(rowHtml).join("");
+  if (unscored.length) body += `<tr class="sep"><td colspan="${cols}">Not scouted yet: no scores on file before this competition (${unscored.length})</td></tr>` + unscored.map(rowHtml).join("");
+  $("#previewTable").innerHTML = head + "<tbody>" + body + "</tbody>";
+}
+
+/* ======================= TEAMS ======================= */
+function teamCard(team) {
+  const rs = results(team);
+  const s = stats(rs.map(r => r.score));
+  const seasons = [...new Set(rs.map(r => r.season))].sort().reverse();
+  const entered = EVENTS.filter(ev => ev.entries.some(e => e.team === team));
+  const divs = [...new Set(rs.map(r => r.div).filter(Boolean))];
+  return `<div class="card" style="margin-bottom:14px">
+    <h3>${esc(team)}${isOurs(team) ? ' <span class="pill accent">Ours</span>' : ""}</h3>
+    ${divs.length ? `<p class="hint" style="margin:0">${esc(divs.join(" · "))}</p>` : ""}
+    <div class="stats">
+      <div class="stat"><span>Average</span><b>${fmt(s.avg)}</b></div>
+      <div class="stat"><span>Best</span><b>${fmt(s.best)}</b></div>
+      <div class="stat"><span>Lowest</span><b>${fmt(s.low)}</b></div>
+      <div class="stat"><span>Scores on file</span><b>${s.n}</b></div>
+    </div>
+    ${seasons.map(se => `<p style="margin:10px 0 6px;font-weight:700">${se}</p>
+      <div class="scores">${rs.filter(r => r.season === se).sort((a, b) => a.date.localeCompare(b.date)).map(r =>
+        `<span class="${r.score === s.best ? "best" : ""}">${esc(resLabel(r))}: ${fmt(r.score)}</span>`).join("")}</div>`).join("") || '<p class="empty">No scores on file yet.</p>'}
+    ${entered.length ? `<p style="margin:12px 0 6px;font-weight:700">Comp previews</p>
+      <div class="scores">${entered.map(ev => `<button class="chip-btn" data-ev="${ev.id}">${esc(evLabel(ev))}</button>`).join("")}</div>` : ""}
+  </div>`;
+}
+function renderTeams() {
+  const q = $("#teamSearch").value.trim().toLowerCase();
+  const se = TEAM_SEASON;
+  const names = Object.keys(TEAMS).filter(n => se === "all" || seasonScores(n, se).length || isOurs(n)).sort((a, b) => (stats(seasonScores(b, se)).avg ?? 0) - (stats(seasonScores(a, se)).avg ?? 0));
+  const shown = names.filter(n => n.toLowerCase().includes(q));
+  $("#teamList").innerHTML = shown.length ? shown.map(n => {
+    const s = stats(seasonScores(n, se));
+    const dv = [...new Set(results(n).filter(r => inSeason(r, se)).map(r => r.div).filter(Boolean))].slice(-1)[0] || "";
+    return `<div class="card"><div><button class="team-link" data-team="${esc(n)}">${esc(n)}</button><small>${s.n} score${s.n === 1 ? "" : "s"}${dv ? " · " + esc(dv) : ""}</small></div><b style="font-variant-numeric:tabular-nums">${fmt(s.avg)}</b></div>`;
+  }).join("") : `<p class="empty">No team matches “${esc(q)}”.</p>`;
+}
+function showTeam(team) {
+  setView("teams");
+  $("#teamDetail").innerHTML = teamCard(team);
+  $("#teamDetail").scrollIntoView({ block: "start" });
+}
+
+/* ======================= COMPARE ======================= */
+function renderCompare() {
+  const a = $("#cmpA").value, b = $("#cmpB").value;
+  const se = CMP_SEASON;
+  const sa = stats(seasonScores(a, se)), sb = stats(seasonScores(b, se));
+  const row = (label, x, y, higher = true) => {
+    let wa = false, wb = false;
+    if (x != null && y != null && x !== y) { const aBetter = higher ? x > y : x < y; wa = aBetter; wb = !aBetter; }
+    return `<div class="cmp-row"><div class="l ${wa ? "win" : ""}">${fmt(x)}</div><div class="mid">${label}</div><div class="r ${wb ? "win" : ""}">${fmt(y)}</div></div>`;
+  };
+  const shared = [];
+  results(a).filter(r => inSeason(r, se)).forEach(ra => results(b).filter(r => inSeason(r, se)).forEach(rb => {
+    const ca = ra.comp.replace(/ \(as .*\)$/, ""), cb = rb.comp.replace(/ \(as .*\)$/, "");
+    if (ra.comp !== EARLY && ca === cb && ra.season === rb.season && ra.round === rb.round && ra.div === rb.div) shared.push([ra, rb]);
+  }));
+  const list = (team, s) => `<div class="scores">${results(team).filter(r => inSeason(r, se)).map(r => `<span class="${r.score === s.best ? "best" : ""}">${esc(r.season + " " + resLabel(r))}: ${fmt(r.score)}</span>`).join("") || '<span class="empty">None on file</span>'}</div>`;
+  $("#cmpOut").innerHTML = `<div class="card">
+    <div class="cmp-row" style="align-items:start"><div class="l" style="font-size:16px">${esc(a)}</div><div class="vs">VS</div><div class="r" style="font-size:16px">${esc(b)}</div></div>
+    ${row("Average", sa.avg, sb.avg)}${row("Best", sa.best, sb.best)}${row("Lowest", sa.low, sb.low)}${row("Spread (best − low)", sa.spread, sb.spread, false)}
+    <div class="cmp-row"><div class="l">${sa.n}</div><div class="mid">Scores on file</div><div class="r">${sb.n}</div></div>
+  </div>
+  ${shared.length ? `<div class="card" style="margin-top:14px"><h3>Same mat, same day</h3>${shared.map(([ra, rb]) =>
+    row(esc(ra.season + " " + ra.comp.replace(/ \(as .*\)$/, "") + (ra.round && ra.round !== "Finals" ? " " + ra.round : "")), ra.score, rb.score)).join("")}</div>` : ""}
+  <div class="grid2" style="margin-top:14px">
+    <div class="card"><h3>${esc(a)}</h3>${list(a, sa)}</div>
+    <div class="card"><h3>${esc(b)}</h3>${list(b, sb)}</div>
+  </div>
+  <p class="hint" style="margin-top:12px">${se === "all" ? "Showing every season on file. Pick one season above to compare just that year. " : "Showing " + se + " only. "}A smaller spread means a more consistent team. "Same mat, same day" only counts competitions where both teams have a named score in the same division.</p>`;
+}
+
+/* ======================= SEASONS ======================= */
+const compCount = rs => new Set(rs.map((r, i) => r.comp === EARLY ? "early" + i : r.comp)).size;
+function teamSeasonDiv(team, se) {
+  const c = {};
+  ownResults(team).filter(r => r.season === se && r.div).forEach(r => c[r.div] = (c[r.div] || 0) + 1);
+  return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || null;
+}
+function seasonFinish(team, se) {
+  if (se === S26) {
+    for (const k in summitEntries) { const r = summitEntries[k].find(e => e.team === team); if (r) return "Summit: " + r.finish; }
+    const y = ownResults(team).find(r => r.season === se && r.comp === "The Youth Summit" && r.place);
+    if (y) return "Youth Summit: " + ordinal(y.place);
+    const ne = ownResults(team).find(r => r.season === se && r.comp === "The Northeast Regional Summit" && r.place);
+    if (ne) return "NE Regional Summit: " + ordinal(ne.place);
+    const s = ownResults(team).find(r => r.season === se && r.comp === SUMMIT && r.place);
+    if (s) return "Summit: " + ordinal(s.place);
+  }
+  return null;
+}
+function renderSeasons() {
+  const se = SEL_SEASON;
+  $("#seasonSwitch").innerHTML = SEASONS.map(x => `<button type="button" data-season="${x}" aria-pressed="${x === se}">${x}<small>${x === S27 ? "this season" : x === S26 ? "last season" : "two seasons ago"}</small></button>`).join("");
+  const cards = OUR.map(o => {
+    const rs = ownResults(o.team).filter(r => r.season === se).sort((a, b) => a.date.localeCompare(b.date));
+    const s = stats(rs.map(r => r.score));
+    const wins = rs.filter(r => r.place === 1 && r.round !== "Semis" && r.round !== "Wild Card").length;
+    const div = teamSeasonDiv(o.team, se) || (se === S27 ? o.div : null);
+    const fin = seasonFinish(o.team, se);
+    const label = o.team.replace("Star Athletics ", "");
+    let body;
+    if (rs.length) body = `<div class="scores" style="margin-top:6px">${rs.map(r => `<span class="${r.score === s.best ? "best" : ""}">${esc(resLabel(r))}: ${fmt(r.score)}</span>`).join("")}</div>`;
+    else if (se === S27) body = `<p class="hint" style="margin:6px 0 0">${o.isNew ? "Brand-new team. " : ""}No scores yet. First competition: Spirit Cheer, Jan 9–10.</p>`;
+    else body = `<p class="hint" style="margin:6px 0 0">No scores on file for this season${o.isNew ? " (new team this year)" : ""}.</p>`;
+    return `<div class="card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline">
+        <h3 style="margin:0"><button class="team-link" data-team="${esc(o.team)}">${esc(label)}</button></h3>
+        <span class="hint" style="margin:0">${div ? esc(div) : ""}</span>
+      </div>
+      ${rs.length ? `<div class="stats compact" style="margin:8px 0 0">
+        <div class="stat"><span>Comps</span><b>${compCount(rs)}</b></div>
+        <div class="stat"><span>Average</span><b>${fmt(s.avg)}</b></div>
+        <div class="stat"><span>Best</span><b>${fmt(s.best)}</b></div>
+        <div class="stat"><span>Wins</span><b>${wins}</b></div>
+        ${fin ? `<div class="stat"><span>End of season</span><b style="font-size:18px;line-height:1.2">${esc(fin)}</b></div>` : ""}
+      </div>` : ""}
+      ${body}
+    </div>`;
+  }).join("");
+  $("#seasonOverview").innerHTML = (se === S27 ? `<p class="hint">The 2026–27 season is just starting. This view fills in automatically as scores post.</p>` : "") + cards;
+  // standings
+  const withDiv = OUR.map(o => ({ o, div: teamSeasonDiv(o.team, se) || (se === S27 ? o.div : null) })).filter(x => x.div);
+  if (!withDiv.some(x => x.o.key === SEL_STAND)) SEL_STAND = withDiv[0] ? withDiv[0].o.key : null;
+  $("#standSwitch").innerHTML = withDiv.map(x => `<button type="button" data-stand="${x.o.key}" aria-pressed="${x.o.key === SEL_STAND}">${esc(x.o.team.replace("Star Athletics ", ""))}<small>${esc(x.div)}</small></button>`).join("") || '<p class="empty">No division data for this season.</p>';
+  const pick = withDiv.find(x => x.o.key === SEL_STAND);
+  if (!pick) { $("#standTable").innerHTML = ""; return; }
+  const rows = Object.keys(TEAMS).map(t => {
+    const rs = ownResults(t).filter(r => r.season === se && r.div === pick.div);
+    return { t, rs, s: stats(rs.map(r => r.score)) };
+  }).filter(x => x.rs.length).sort((a, b) => b.s.avg - a.s.avg);
+  if (!rows.length) { $("#standTable").innerHTML = `<tbody><tr><td class="empty">No ${esc(pick.div)} scores on file for ${esc(se)} yet.</td></tr></tbody>`; return; }
+  $("#standTable").innerHTML = `<thead><tr><th>#</th><th>Team</th><th class="num">Avg</th><th class="num">Best</th><th class="num">Comps</th><th class="num">Wins</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${i === 0 ? "top1" : ""} ${isOurs(x.t) ? "mine" : ""}">
+    <td class="rank">${i + 1}</td><td><button class="team-link" data-team="${esc(x.t)}">${esc(x.t)}</button></td>
+    <td class="num"><b>${fmt(x.s.avg)}</b></td><td class="num">${fmt(x.s.best)}</td><td class="num">${compCount(x.rs)}</td>
+    <td class="num">${x.rs.filter(r => r.place === 1 && r.round !== "Semis" && r.round !== "Wild Card").length}</td></tr>`).join("")}</tbody>`;
+}
+
+/* ======================= VIEW SWITCHING ======================= */
+const VIEWS = ["season", "preview", "teams", "compare", "seasons"];
+function setView(v) {
+  document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.view === v)));
+  document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== "panel-" + v);
+  if (location.hash.slice(1) !== v) history.replaceState(null, "", "#" + v);
+}
+function setOur(key) {
+  CURRENT = OUR.find(o => o.key === key) || OUR[0];
+  try { localStorage.setItem("ccs-our", CURRENT.key); } catch (e) {}
+  renderSwitch(); renderSeason();
+  const ev = EVENTS.find(e => e.comp === SUMMIT && e.division === CURRENT.div);
+  if (ev) { $("#divSelect").value = ev.id; renderPreview(); }
+  const pick = CURRENT.isNew ? (ev && ev.entries[0] ? ev.entries[0].team : CURRENT.team) : CURRENT.team;
+  $("#cmpA").value = pick;
+  const rival = ev && ev.entries.find(e => e.team !== pick);
+  if (rival) $("#cmpB").value = rival.team;
+  renderCompare();
+}
+
+/* ======================= INIT ======================= */
+$("#divSelect").innerHTML = EVENTS.map(ev => `<option value="${ev.id}">${esc(evLabel(ev))}${ev.entries.some(e => e.place != null) ? " (results in)" : ""}</option>`).join("");
+const teamNames = Object.keys(TEAMS).filter(n => allScores(n).length).sort((x, y) => x.localeCompare(y));
+const opts = teamNames.map(n => `<option>${esc(n)}</option>`).join("");
+$("#cmpA").innerHTML = opts; $("#cmpB").innerHTML = opts;
+const seasonOpts = `<option value="all">All seasons</option>` + SEASONS.map(x => `<option value="${x}">${x}</option>`).join("");
+$("#teamSeason").innerHTML = seasonOpts; $("#cmpSeason").innerHTML = seasonOpts;
+$("#teamSeason").addEventListener("change", e => { TEAM_SEASON = e.target.value; renderTeams(); });
+$("#cmpSeason").addEventListener("change", e => { CMP_SEASON = e.target.value; renderCompare(); });
+
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+$("#divSelect").addEventListener("change", renderPreview);
+$("#modeSelect").addEventListener("change", e => { RANK_MODE = e.target.value; renderPreview(); });
+$("#teamSearch").addEventListener("input", renderTeams);
+$("#cmpA").addEventListener("change", renderCompare);
+$("#cmpB").addEventListener("change", renderCompare);
+document.addEventListener("click", e => {
+  const o = e.target.closest("[data-our]"); if (o) { setOur(o.dataset.our); return; }
+  const sz = e.target.closest("[data-season]"); if (sz) { SEL_SEASON = sz.dataset.season; renderSeasons(); return; }
+  const st = e.target.closest("[data-stand]"); if (st) { SEL_STAND = st.dataset.stand; renderSeasons(); return; }
+  const t = e.target.closest(".team-link"); if (t) { showTeam(t.dataset.team); return; }
+  const c = e.target.closest(".chip-btn"); if (c) { $("#divSelect").value = c.dataset.ev; renderPreview(); setView("preview"); }
+});
+window.addEventListener("hashchange", () => { const v = location.hash.slice(1); if (VIEWS.includes(v)) setView(v); });
+
+let saved = null; try { saved = localStorage.getItem("ccs-our"); } catch (e) {}
+renderTeams();
+setOur(saved || "phoenix");
+SEL_STAND = (saved || "phoenix"); renderSeasons();
+const startView = location.hash.slice(1);
+if (VIEWS.includes(startView) && startView !== "season") setView(startView);
+</script>
+</body>
+</html>
