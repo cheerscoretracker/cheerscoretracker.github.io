@@ -156,6 +156,7 @@ tr.mine td { background: var(--accent-soft); }
     <p class="hint">The 2026–27 schedule through the end-of-season championship, with what happened in this division at each competition last season. Each competition's field gets added when the performance order posts, usually about a week before.</p>
     <div class="headline" id="seasonHead"></div>
     <div class="card" id="roster27" style="margin-bottom:16px"></div>
+    <div class="card" id="last26" style="margin-bottom:16px"></div>
     <div class="sched" id="sched"></div>
   </section>
 
@@ -1012,6 +1013,10 @@ function renderSeason() {
       <button class="team-link" data-team="${esc(x.team)}">${esc(x.team)}</button>: ${esc(x.note)}</li>`).join("")}</ul>
     <p class="hint" style="margin:6px 0 0">Most teams haven't competed yet this season. This list grows as results and performance orders post.</p>`;
   const mon = s => d(s).toLocaleString("en-US", { month: "short" });
+  const past = ownResults(o.team).filter(r => r.season === S26).sort((a, b) => a.date.localeCompare(b.date));
+  $("#last26").innerHTML = `<h3>${esc(o.team.replace("Star Athletics ", ""))}'s 2025–26 season: every competition</h3>` + (past.length
+    ? `<ul style="margin:6px 0 0;padding-left:18px">${past.map(r => `<li style="margin-bottom:4px">${d(r.date).toLocaleString("en-US", { month: "short", day: "numeric" })} · ${esc(r.comp)}${r.round && r.round !== "Finals" ? " " + esc(r.round) : ""} · ${r.place ? ordinal(r.place) + " · " : ""}<b>${fmt(r.score)}</b>${r.div && r.div !== o.div ? ` <span class="hint">(${esc(r.div)})</span>` : ""}</li>`).join("")}</ul>`
+    : `<p class="hint" style="margin:6px 0 0">${o.isNew ? "Brand-new team this season, so there's no 2025–26 history." : "No 2025–26 scores on file."}</p>`);
   $("#sched").innerHTML = SCHEDULE.map((c, i) => {
     const s = d(c.start), e = d(c.end);
     const range = s.getMonth() === e.getMonth() ? `${s.getDate()}–${e.getDate()}` : `${s.getDate()}–${mon(c.end)} ${e.getDate()}`;
