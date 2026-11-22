@@ -143,11 +143,11 @@ tr.mine td { background: var(--accent-soft); }
     <p class="sub">Know who you're up against before the mat.</p>
     <nav role="tablist" aria-label="Sections">
       <button role="tab" id="tab-season" aria-controls="panel-season" aria-selected="true" data-view="season">Our Teams</button>
-      <button role="tab" id="tab-preview" aria-controls="panel-preview" aria-selected="false" data-view="preview">Comp Preview</button>
+      <button role="tab" id="tab-fields" aria-controls="panel-fields" aria-selected="false" data-view="fields">Matchups</button>
       <button role="tab" id="tab-teams" aria-controls="panel-teams" aria-selected="false" data-view="teams">Teams</button>
       <button role="tab" id="tab-compare" aria-controls="panel-compare" aria-selected="false" data-view="compare">Compare</button>
-      <button role="tab" id="tab-fields" aria-controls="panel-fields" aria-selected="false" data-view="fields">Matchups</button>
       <button role="tab" id="tab-seasons" aria-controls="panel-seasons" aria-selected="false" data-view="seasons">Seasons</button>
+      <button role="tab" id="tab-preview" aria-controls="panel-preview" aria-selected="false" data-view="preview">Past Results</button>
     </nav>
   </div>
 </header>
@@ -166,7 +166,7 @@ tr.mine td { background: var(--accent-soft); }
 
   <!-- COMP PREVIEW -->
   <section class="panel" id="panel-preview" role="tabpanel" aria-labelledby="tab-preview" hidden>
-    <h2>Comp Preview</h2>
+    <h2>Past Results</h2>
     <p class="hint">Every team in a division, ranked by score coming in. "Last 3 comps" weighs how a team is scoring lately; teams often peak late in the season. Once the competition is over, the real finish shows next to the prediction.</p>
     <div class="controls">
       <label for="divSelect">Competition &amp; division
@@ -1387,7 +1387,7 @@ function teamCard(team) {
     ${seasons.map(se => `<p style="margin:10px 0 6px;font-weight:700">${se}</p>
       <div class="scores">${rs.filter(r => r.season === se).sort((a, b) => a.date.localeCompare(b.date)).map(r =>
         `<span class="${r.score === s.best ? "best" : ""}">${esc(resLabel(r))}: ${fmt(r.score)}</span>`).join("")}</div>`).join("") || '<p class="empty">No scores on file yet.</p>'}
-    ${entered.length ? `<p style="margin:12px 0 6px;font-weight:700">Comp previews</p>
+    ${entered.length ? `<p style="margin:12px 0 6px;font-weight:700">Past results</p>
       <div class="scores">${entered.map(ev => `<button class="chip-btn" data-ev="${ev.id}">${esc(evLabel(ev))}</button>`).join("")}</div>` : ""}
   </div>`;
 }
