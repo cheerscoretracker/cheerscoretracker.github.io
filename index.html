@@ -1543,7 +1543,7 @@ function renderFields() {
   const dd = s => { const [y, m, x] = s.split("-").map(Number); return new Date(y, m - 1, x); };
   if (!SEL_COMP) { const n = SCHEDULE.find(c => dd(c.end) >= today); SEL_COMP = (n || SCHEDULE[SCHEDULE.length - 1]).name; }
   $("#compSwitch").innerHTML = SCHEDULE.map(c => { const s = dd(c.start); const posted = FIELDS27.some(f => f.comp === c.name);
-    return `<button type="button" data-comp="${esc(c.name)}" aria-pressed="${c.name === SEL_COMP}">${esc(c.name)}<small>${s.toLocaleString("en-US", { month: "short", day: "numeric" })}${posted ? " · field posted" : ""}</small></button>`; }).join("");
+    return `<button type="button" data-comp="${esc(c.name)}" aria-pressed="${c.name === SEL_COMP}">${esc(c.name)}<small>${s.toLocaleString("en-US", { month: "short", day: "numeric" })}${posted ? " \\u00b7 field posted" : ""}</small></button>`; }).join("");
   $("#fieldsOut").innerHTML = OUR.filter(o => !o.retired).map(o => {
     const f = FIELDS27.find(x => x.comp === SEL_COMP && x.div === DIVCODE[o.div]);
     const label = esc(o.team.replace("Star Athletics ", ""));
@@ -1554,8 +1554,8 @@ function renderFields() {
     return `<div class="card" style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline"><h3 style="margin:0">${label} <span class="hint" style="margin:0">${esc(o.div)}</span></h3>
       <span class="pill accent">${mine >= 0 && rows[mine].s.avg != null ? "Ranked " + ordinal(mine + 1) + " of " + rows.length : rows.length + " teams"}</span></div>
-      <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>#</th><th>Team</th><th class="num">2026–27 avg</th><th class="num">Best</th><th class="num">Comps</th><th class="num">Last season avg</th></tr></thead><tbody>
-      ${rows.map((x, i) => `<tr class="${x.t === o.team ? "mine" : ""}"><td class="rank">${x.s.avg != null ? i + 1 : "–"}</td><td><button class="team-link" data-team="${esc(x.t)}">${esc(x.t)}</button></td><td class="num"><b>${fmt(x.s.avg)}</b></td><td class="num">${fmt(x.s.best)}</td><td class="num">${x.s.n || "—"}</td><td class="num">${fmt(x.l.avg)}</td></tr>`).join("")}
+      <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>#</th><th>Team</th><th class="num">2026\\u201327 avg</th><th class="num">Best</th><th class="num">Comps</th><th class="num">Last season avg</th></tr></thead><tbody>
+      ${rows.map((x, i) => `<tr class="${x.t === o.team ? "mine" : ""}"><td class="rank">${x.s.avg != null ? i + 1 : "\\u2013"}</td><td><button class="team-link" data-team="${esc(x.t)}">${esc(x.t)}</button></td><td class="num"><b>${fmt(x.s.avg)}</b></td><td class="num">${fmt(x.s.best)}</td><td class="num">${x.s.n || "\\u2014"}</td><td class="num">${fmt(x.l.avg)}</td></tr>`).join("")}
       </tbody></table></div></div>`;
   }).join("");
 }
